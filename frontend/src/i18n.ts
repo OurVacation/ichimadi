@@ -1,0 +1,81 @@
+// 화면 글자. 일본어 화면 글자는 JA, 상대방(한국인)에게 보이는 글자는 PARTNER. 일본어는 초안이라 검수가 필요하다.
+
+export const JA = {
+  appName: 'イチマディ',
+  tagline: '韓国語をひとこと。通じたらハンコをポン！',
+  error: 'うまくいきませんでした。もう一度お試しください',
+  login: {
+    title: 'ログイン',
+    lead: 'お渡ししたカードのIDとパスワードを入れてください',
+    id: 'ID',
+    password: 'パスワード',
+    submit: 'はじめる',
+    busy: '確認しています…',
+    failed: 'IDかパスワードが違います',
+  },
+  animal: {
+    title: 'ハンコの動物を選んでください',
+    lead: 'あなたのハンコに入る動物です',
+    tiger: 'トラ',
+    rabbit: 'ウサギ',
+    magpie: 'カササギ',
+    bear: 'クマ',
+  },
+  name: {
+    title: '韓国式の名前をつけましょう',
+    lead: 'お名前を漢字かかなで入れてください',
+    label: 'お名前',
+    placeholder: '例：陽子、ようこ',
+    candidates: '名前の候補（ひとつ選んでください）',
+    unreadable: '読めませんでした。ひらがなでも試してください',
+    preview: 'あなたのハンコ',
+    confirm: 'この名前に決める',
+    back: '動物を選び直す',
+  },
+  board: {
+    stamps: 'スタンプ',
+    hint: 'ポクチュモニ（福袋）をタップして、ひとことを開けよう',
+    book: 'スタンプ帳',
+    logout: 'ログアウト',
+    logoutConfirm: 'ログアウトしますか？',
+    done: '通じた',
+  },
+  opening: {
+    label: '開けています…',
+  },
+  card: {
+    back: '← 一覧',
+    meaning: '意味',
+    when: '使うとき',
+    listen: '▶ 音声で聞く',
+    reply: '相手はこう返すかも',
+    said: '言ってみた！相手に見せる',
+  },
+  partner: {
+    show: 'この画面を相手に見せてください',
+  },
+  stamped: {
+    title: '通じた！',
+    toBook: 'スタンプ帳を見る',
+    toBoard: '次のひとことへ',
+  },
+  book: {
+    title: 'イチマディ スタンプ帳',
+    lead: '通じたひとことにハンコが押されます',
+    back: '← 一覧',
+    empty: 'まだ',
+    complete: 'コンプリート！',
+    completeLead: (n: number) => `${n}つのひとことがすべて通じました`,
+    close: 'スタンプ帳を閉じる',
+    closed: '完成',
+    reopen: 'もう一度開く',
+  },
+}
+
+export const PARTNER = {
+  who: '상대방께',
+  lead: '이분이 한국어로 말했어요. 알아들으셨으면 눌러 주세요',
+  ok: '알아들었어요',
+  again: '다시 한 번',
+  saveFailed: '저장하지 못했어요. 한 번 더 눌러 주세요',
+}

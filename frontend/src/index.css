@@ -1,0 +1,753 @@
+/* 한지 바탕, 쪽빛 글자, 인주 빨강(도장과 복주머니). 밝은 화면 하나만 쓴다. 상대방 화면만 어둡다. */
+:root {
+  color-scheme: light;
+  --paper: #f6f1e6;
+  --surface: #fffdf8;
+  --ink: #1b2233;
+  --muted: #5a6377;
+  --line: #ddd5c4;
+  --indigo: #2b3a67;
+  --indigo-soft: #e6eaf5;
+  --red: #c21f3a;
+  --red-deep: #951429;
+  --red-soft: #fbe8eb;
+  --gold: #c9a227;
+  --on-accent: #ffffff;
+  --staff-bg: #1f2a4d;
+  --staff-ink: #ffffff;
+  --f-ja: system-ui, -apple-system, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  --f-ko: system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-ja);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[lang='ko'] {
+  font-family: var(--f-ko);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.3rem;
+  line-height: 1.35;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 3px solid var(--indigo);
+  outline-offset: 2px;
+}
+
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* layout */
+.page {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+}
+
+.stack {
+  gap: 16px;
+}
+
+.stack-sm {
+  display: grid;
+  gap: 8px;
+}
+
+.center {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.error {
+  color: var(--red-deep);
+  font-weight: 700;
+}
+
+/* buttons */
+.btn {
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 18px;
+  background: var(--red);
+  color: var(--on-accent);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.btn.wide {
+  align-self: stretch;
+}
+
+.btn-bottom {
+  margin-top: auto;
+}
+
+.link {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  padding: 8px 4px;
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 0.95rem;
+}
+
+.link.back {
+  align-self: flex-start;
+  text-decoration: none;
+  padding-left: 0;
+}
+
+/* login */
+.hero {
+  padding: 24px 0 20px;
+}
+
+.brand {
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: var(--indigo);
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  margin-top: 6px;
+  color: var(--red);
+  font-weight: 700;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 20px 16px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.field input {
+  min-height: 52px;
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  font-size: 1.1rem; /* 16px 이상이라 iOS가 확대하지 않는다 */
+  font-weight: 400;
+}
+
+.field input:focus {
+  border-color: var(--indigo);
+  outline: none;
+}
+
+/* animal */
+.animal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.animal {
+  min-height: 132px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  padding: 12px;
+  font-weight: 700;
+}
+
+.animal:active {
+  border-color: var(--red);
+}
+
+.animal-emoji {
+  font-size: 3.4rem;
+  line-height: 1;
+}
+
+/* name */
+.candidates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.candidate {
+  min-height: 56px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.candidate.is-picked {
+  border-color: var(--red);
+  background: var(--red-soft);
+  color: var(--red-deep);
+}
+
+.preview {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+/* board */
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-sm {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--indigo);
+}
+
+.count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--red);
+  background: var(--red-soft);
+  padding: 2px 12px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.me {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.me-links {
+  display: flex;
+  gap: 12px;
+}
+
+.hint {
+  font-size: 0.9rem;
+  color: var(--indigo);
+  background: var(--indigo-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.pouch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pouch-btn {
+  position: relative;
+  width: 100%;
+  min-height: 168px;
+  border: 1.5px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  padding: 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.pouch-btn.got {
+  border-color: var(--red-soft);
+  background: var(--red-soft);
+}
+
+.pouch-num {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-weight: 900;
+  color: var(--indigo);
+}
+
+.pouch-when {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.pouch-mark {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.pouch-mark .seal {
+  width: 44px;
+}
+
+/* pouch svg */
+.pouch {
+  width: 84px;
+  height: auto;
+  overflow: visible;
+}
+
+.pouch-big {
+  width: 170px;
+}
+
+.p-body {
+  fill: var(--red);
+}
+.p-top {
+  fill: var(--red-deep);
+}
+.p-gold {
+  fill: var(--gold);
+}
+.p-line {
+  stroke: var(--gold);
+  fill: none;
+  stroke-width: 2.5;
+}
+.p-text {
+  fill: var(--gold);
+  font-family: var(--f-ko);
+  font-weight: 900;
+  font-size: 28px;
+}
+.p-lid {
+  transform-origin: 60px 48px;
+}
+
+/* 흔들린 뒤(0.45초) 뚜껑이 열린다(0.35초). 열기 화면은 0.85초 뒤 카드로 바뀐다 */
+.opening {
+  transform-origin: 50% 90%;
+  animation: wiggle 0.45s ease;
+}
+.opening .p-lid {
+  animation: lid-open 0.35s ease 0.45s forwards;
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+  75% {
+    transform: rotate(-3deg);
+  }
+}
+
+@keyframes lid-open {
+  to {
+    transform: translateY(-34px) rotate(-14deg);
+    opacity: 0;
+  }
+}
+
+/* card */
+.say {
+  background: var(--red-soft);
+  border-radius: 18px;
+  padding: 18px 16px;
+  display: grid;
+  gap: 4px;
+}
+
+.say-ko {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.kana {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.ja {
+  color: var(--muted);
+}
+
+.speak {
+  justify-self: start;
+  margin-top: 8px;
+  min-height: 44px;
+  border: 1.5px solid var(--red);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--red);
+  padding: 6px 16px;
+  font-weight: 700;
+}
+
+.info {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 12px 14px;
+  display: grid;
+  gap: 2px;
+}
+
+.reply-ko {
+  font-size: 1.2rem;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+/* partner (상대방 화면) */
+.partner {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--staff-bg);
+  color: var(--staff-ink);
+  font-family: var(--f-ko);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  text-align: center;
+  word-break: keep-all;
+}
+
+.partner-show {
+  font-family: var(--f-ja);
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.partner-body {
+  flex: 1;
+  display: grid;
+  align-content: center;
+  gap: 16px;
+}
+
+.partner-who {
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+.partner-lead {
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.partner-quote {
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.partner-error {
+  color: #ffd2d8;
+  font-weight: 700;
+}
+
+.partner-ok {
+  width: 100%;
+  max-width: 480px;
+  align-self: center;
+  min-height: 112px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--red);
+  color: var(--on-accent);
+  font-size: 2.2rem;
+  font-weight: 800;
+  box-shadow: 0 6px 0 var(--red-deep);
+}
+
+.partner-ok:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 var(--red-deep);
+}
+
+.partner-again {
+  width: 100%;
+  max-width: 480px;
+  align-self: center;
+  min-height: 60px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--staff-ink);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* seal (도장) */
+.seal {
+  --name-size: 0.95rem;
+  container-type: inline-size;
+  width: 76px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid var(--red);
+  box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 5px var(--red);
+  background: var(--surface);
+  color: var(--red);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  transform: rotate(-10deg);
+  line-height: 1.1;
+  flex: none;
+}
+
+.seal-animal {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.seal-name {
+  font-size: var(--name-size);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/* 이름이 길면 도장 안에 들어가게 줄인다 (한글 한 글자 = 1em, 도장 폭의 72%까지) */
+@supports (font-size: 1cqi) {
+  .seal-name {
+    font-size: min(var(--name-size), calc(72cqi / var(--chars, 1)));
+  }
+}
+
+.seal-time {
+  font-size: 0.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.seal-big {
+  --name-size: 1.8rem;
+  width: 160px;
+  border-width: 5px;
+  box-shadow: inset 0 0 0 5px var(--surface), inset 0 0 0 8px var(--red);
+}
+
+.seal-big .seal-animal {
+  font-size: 3rem;
+}
+
+.seal-big .seal-time {
+  font-size: 0.85rem;
+}
+
+.stamp-in {
+  animation: stamp 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes stamp {
+  from {
+    transform: scale(2.2) rotate(-10deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(-10deg);
+    opacity: 1;
+  }
+}
+
+.done-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+/* book */
+.complete {
+  background: var(--red);
+  color: var(--on-accent);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+.complete small {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.slot {
+  min-height: 132px;
+  min-width: 0;
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  padding: 10px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.slot.got {
+  border-style: solid;
+  border-color: var(--red-soft);
+  background: var(--red-soft);
+}
+
+.slot .seal {
+  --name-size: 0.75rem;
+  width: min(64px, 100%);
+}
+
+.slot .seal-animal {
+  font-size: 1.2rem;
+}
+
+.slot-empty {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.slot-ja {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.slot-time {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--red-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.book-cover {
+  width: min(280px, 100%);
+  aspect-ratio: 3 / 4;
+  border-radius: 6px 18px 18px 6px;
+  background: var(--indigo);
+  color: var(--on-accent);
+  border-left: 14px solid var(--red-deep);
+  box-shadow: 0 14px 30px rgba(27, 34, 51, 0.25);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  padding: 20px;
+}
+
+.book-cover-title {
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+.book-cover-done {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opening,
+  .opening .p-lid,
+  .stamp-in {
+    animation: none;
+  }
+}

@@ -2,11 +2,10 @@
 
 이 디렉터리 규칙은 레포 루트 `CLAUDE.md`에 더해 적용된다.
 
-<!-- TODO(준혁): FE 스택이 정해지면 아래 "스택"과 "명령"을 채운다. 이 HTML 주석은 Claude에게 전달되지 않는다. -->
-
 ## 스택
 
-- (미정) 프레임워크:
+- 프레임워크: React 19 + TypeScript, Vite 6
+- 테스트: Node 내장 `node --test` (Node 23.6 이상, `.ts`를 그대로 실행)
 - 배포: 정적 빌드 → Vercel 또는 Cloudflare Pages
 - API 타입: `docs/api/openapi.json`에서 `openapi-typescript`로 생성한 `src/api/schema.d.ts`
 
@@ -32,5 +31,17 @@ npx openapi-typescript ../docs/api/openapi.json -o src/api/schema.d.ts
 ## 명령
 
 ```bash
-# (스택 확정 후 채움) 개발 서버 / 빌드 / 린트
+cd frontend
+npm install
+cp .env.example .env.local   # 백엔드 로그인 전까지 쓰는 체험 계정 (커밋하지 않음)
+npm run dev                  # 개발 서버. /api는 http://localhost:8000으로 넘김
+npm test                     # 로직 테스트
+npm run build                # 타입 검사 + 배포용 빌드 (dist/)
 ```
+
+## 구조
+
+- `src/core/`: 로직 (저장 연결 `store.ts`, 로그인 흐름 `session.ts`, 이름 후보 `names.ts`, 도장첩 `stamps.ts`, 듣기 `speak.ts`). 화면 코드 없음
+- `src/ui/`: 화면. 화면 상태는 `flow.ts`의 리듀서 하나로 관리. 저장소에 직접 닿지 않고 `Store`로만 저장한다
+- `src/data/`: 한마디(`content/phrases.json`을 읽음), 체험 계정(`.env.local`), 한자 한국음 표
+- 지금 `Store`는 기기 저장(localStorage) 구현이다. 백엔드 API가 정해지면 `src/api/`에 같은 모양의 구현을 만들어 `main.tsx`에서 바꿔 끼운다

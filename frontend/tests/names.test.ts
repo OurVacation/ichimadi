@@ -1,0 +1,46 @@
+// W-04 (H-03): 한국식 이름 후보 (임시 규칙 A-03)
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { koreanNameCandidates } from '../src/core/names.ts'
+
+test('한자 이름: 후보 3개, 한국 한자음 읽기가 들어 있다', () => {
+  const c = koreanNameCandidates('陽子')
+  assert.equal(c.length, 3)
+  assert.ok(c.includes('양자'), c.join(','))
+})
+test('성과 이름을 띄어 쓰면 이름 쪽을 읽는다', () => {
+  assert.ok(koreanNameCandidates('田中 陽子').includes('양자'))
+})
+test('가나 이름: 후보 3개, 소리를 한글로 옮긴 이름이 들어 있다', () => {
+  const c = koreanNameCandidates('ようこ')
+  assert.equal(c.length, 3)
+  assert.ok(c.includes('요코'), c.join(','))
+  assert.ok(koreanNameCandidates('ユウキ').includes('유키'))
+  assert.ok(koreanNameCandidates('けんた').includes('켄타'))
+})
+test('후보는 모두 한글이고 겹치지 않는다', () => {
+  for (const name of ['陽子', 'ようこ', '翔太', 'さくら']) {
+    const c = koreanNameCandidates(name)
+    assert.equal(new Set(c).size, c.length)
+    for (const n of c) assert.match(n, /^[가-힣]+$/)
+  }
+})
+test('빈 입력이나 읽을 수 없는 입력은 후보 없음', () => {
+  assert.deepEqual(koreanNameCandidates(''), [])
+  assert.deepEqual(koreanNameCandidates('   '), [])
+  assert.deepEqual(koreanNameCandidates('123'), [])
+})
+test('신자체 한자도 구자체 읽기로 후보 3개 (桜=櫻 앵, 辺=邊 변)', () => {
+  const sakurako = koreanNameCandidates('桜子')
+  assert.equal(sakurako.length, 3)
+  assert.equal(sakurako[0], '앵자')
+  const watanabe = koreanNameCandidates('渡辺')
+  assert.equal(watanabe.length, 3)
+  assert.equal(watanabe[0], '도변')
+  for (const name of ['沢子', '斎']) assert.equal(koreanNameCandidates(name).length, 3, name)
+})
+
+test('반각 가타카나와 호환 한자도 읽는다 (NFKC)', () => {
+  assert.ok(koreanNameCandidates('ﾖｳｺ').includes('요코'))
+  assert.equal(koreanNameCandidates('神').length, 3)
+})

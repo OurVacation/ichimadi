@@ -3,7 +3,7 @@
 ## 기술 스택
 
 - 백엔드: Python 3.12, FastAPI, PostgreSQL 16, SQLAlchemy, Alembic, uv
-- 프론트엔드: 미정
+- 프론트엔드: React + TypeScript (Vite). 실행법은 `frontend/CLAUDE.md`
 - 로컬 개발: Docker Compose
 
 ## 프로젝트 구조
