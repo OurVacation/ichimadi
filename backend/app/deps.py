@@ -4,8 +4,11 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import decode_access_token
 from app.db import get_db
+from app.llm.base import NameGenerator
+from app.llm.gemini import GeminiNameGenerator
 from app.models import User
 
 bearer = HTTPBearer(auto_error=False)
@@ -23,3 +26,7 @@ def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_name_generator() -> NameGenerator:
+    return GeminiNameGenerator(settings)

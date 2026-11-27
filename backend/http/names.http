@@ -1,0 +1,22 @@
+@baseUrl = http://localhost:8000
+
+### Korean name candidates (503 when GEMINI_API_KEY is absent)
+POST {{baseUrl}}/api/names/suggest
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"ja_name": "田中 陽子"}
+
+### Given name only
+POST {{baseUrl}}/api/names/suggest
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"ja_name": "陽子"}
+
+### Empty name: 422 invalid_ja_name
+POST {{baseUrl}}/api/names/suggest
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"ja_name": ""}

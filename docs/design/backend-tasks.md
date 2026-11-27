@@ -421,7 +421,7 @@ suggest(db, generator, raw_ja_name) -> list[Candidate]
 
 ### `POST /api/names/suggest` ([API 명세](api.md) §8)
 
-- 인증 필수. 요청 `{ja_name: str}`(스키마는 `min_length=1`만, 길이 규칙은 서비스에서 `invalid_ja_name`으로)
+- 인증 필수. 요청 `{ja_name: str}`(스키마는 문자열 타입만 검증하고, 빈 문자열을 포함한 길이 규칙은 서비스에서 `invalid_ja_name`으로 (2026-11-27 사용자 확인))
 - 응답 `{candidates: [{name, note}]}`. FE가 `NameCandidate[]`로 그대로 쓴다
 - 라우터는 `def`(동기)로 쓴다. FastAPI가 스레드풀에서 돌려 LLM 대기 중에도 다른 요청이 막히지 않는다.
 - OpenAPI에 503 응답(`ErrorResponse`)을 `responses=`로 명시한다.

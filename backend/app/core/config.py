@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-me"
     jwt_expire_hours: int = Field(default=72, gt=0)
     content_dir: Path = Path(__file__).resolve().parents[3] / "content"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-3.8-flash"
+    name_suggest_timeout_seconds: float = Field(default=2.5, gt=0)
 
     @model_validator(mode="after")
     def validate_production_secret(self) -> Self:

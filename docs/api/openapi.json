@@ -388,6 +388,72 @@
           }
         }
       }
+    },
+    "/api/names/suggest": {
+      "post": {
+        "tags": [
+          "names"
+        ],
+        "summary": "한국식 이름 후보",
+        "operationId": "suggest_api_names_suggest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameSuggestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameSuggestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -419,6 +485,30 @@
           "bear"
         ],
         "title": "Animal"
+      },
+      "Candidate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "note"
+        ],
+        "title": "Candidate",
+        "examples": [
+          {
+            "name": "전양자",
+            "note": "「田」と「陽子」の韓国語読み"
+          }
+        ]
       },
       "ErrorResponse": {
         "properties": {
@@ -565,6 +655,58 @@
         "examples": [
           {
             "account_id": "judge01"
+          }
+        ]
+      },
+      "NameSuggestRequest": {
+        "properties": {
+          "ja_name": {
+            "type": "string",
+            "title": "Ja Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ja_name"
+        ],
+        "title": "NameSuggestRequest",
+        "examples": [
+          {
+            "ja_name": "田中 陽子"
+          }
+        ]
+      },
+      "NameSuggestResponse": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/Candidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "candidates"
+        ],
+        "title": "NameSuggestResponse",
+        "examples": [
+          {
+            "candidates": [
+              {
+                "name": "전양자",
+                "note": "「田」と「陽子」の韓国語読み"
+              },
+              {
+                "name": "전요코",
+                "note": "「田」を韓国の姓に、名前は音のまま"
+              },
+              {
+                "name": "전서연",
+                "note": "「陽子」の明るい印象に近い韓国の名前"
+              }
+            ]
           }
         ]
       },
