@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 import jwt
 import pytest
 from pydantic import ValidationError
@@ -40,6 +42,46 @@ def test_long_password_is_bad_credentials(client, make_user, password):
     make_user()
     result = client.post("/api/auth/login", json={"login_id": "judge01", "password": password})
     assert result.status_code == 401
+
+
+@pytest.mark.parametrize(
+    "token", [None, "garbage", "expired", "deleted", "huge", "wrong-signature", "missing-exp"]
+)
+def test_invalid_token(client, db, make_user, auth_header, token):
+    user = make_user()
+    headers = {}
+    if token == "expired":
+        token = jwt.encode(
+            {
+                "sub": str(user.id),
+                "iat": datetime.now(UTC) - timedelta(hours=3),
+                "exp": datetime.now(UTC) - timedelta(hours=1),
+            },
+            settings.jwt_secret,
+            algorithm="HS256",
+        )
+    elif token == "deleted":
+        token = auth_header(user)["Authorization"].split()[1]
+        db.delete(user)
+        db.flush()
+    elif token in ("huge", "wrong-signature", "missing-exp"):
+        claims = {
+            "sub": str(10**100) if token == "huge" else str(user.id),
+            "iat": datetime.now(UTC),
+            "exp": datetime.now(UTC) + timedelta(hours=1),
+        }
+        if token == "missing-exp":
+            del claims["exp"]
+        token = jwt.encode(
+            claims,
+            "another-secret" if token == "wrong-signature" else settings.jwt_secret,
+            algorithm="HS256",
+        )
+    if token:
+        headers = {"Authorization": f"Bearer {token}"}
+    result = client.get("/api/me", headers=headers)
+    assert result.status_code == 401
+    assert result.json()["code"] == "unauthorized"
 
 
 def test_create_accounts(db, tmp_path):

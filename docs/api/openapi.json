@@ -86,10 +86,122 @@
           }
         }
       }
+    },
+    "/api/me": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "내 정보",
+        "operationId": "me_api_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/me/profile": {
+      "put": {
+        "tags": [
+          "me"
+        ],
+        "summary": "도장 프로필 저장",
+        "operationId": "save_profile_api_me_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "Animal": {
+        "type": "string",
+        "enum": [
+          "tiger",
+          "rabbit",
+          "magpie",
+          "bear"
+        ],
+        "title": "Animal"
+      },
       "ErrorResponse": {
         "properties": {
           "code": {
@@ -196,6 +308,95 @@
             "token_type": "bearer"
           }
         ]
+      },
+      "MeResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "animal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Animal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "korean_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Korean Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "animal",
+          "korean_name"
+        ],
+        "title": "MeResponse",
+        "examples": [
+          {
+            "account_id": "judge01"
+          }
+        ]
+      },
+      "ProfileRequest": {
+        "properties": {
+          "animal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Animal"
+          },
+          "korean_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Korean Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "animal",
+          "korean_name"
+        ],
+        "title": "ProfileRequest",
+        "examples": [
+          {
+            "animal": "tiger",
+            "korean_name": "양자"
+          },
+          {
+            "animal": "tiger",
+            "korean_name": ""
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }
