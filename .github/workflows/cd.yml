@@ -1,0 +1,221 @@
+# CD: dev 에 backend / frontend / content / 배포 설정 변경이 머지되면
+#   1) 테스트 → 2) 이미지 2개(api, web)를 같은 커밋 태그로 GHCR 에 push → 3) SSH 로 VM 에 배포하고 실제 주소로 확인
+# 3) 은 DEPLOY_HOST secret 이 없으면 자동으로 건너뛴다.
+name: CD
+
+on:
+  push:
+    branches: [dev] # 배포 브랜치. 바꾸려면 아래 deploy job 의 if 도 함께 바꾼다
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'content/**'
+      - 'compose.prod.yml'
+      - 'Caddyfile'
+      - 'deploy/**'
+      - '.github/workflows/cd.yml'
+  workflow_dispatch: # Actions 탭에서 수동 재배포
+
+# 배포는 한 번에 하나씩, 진행 중인 배포는 취소하지 않는다.
+concurrency:
+  group: cd
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+      prefix: ${{ steps.vars.outputs.prefix }}
+      deploy-enabled: ${{ steps.deploy-check.outputs.enabled }}
+    steps:
+      - name: Compute image tag and registry path
+        id: vars
+        run: |
+          echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          # GHCR 경로는 소문자만 허용 (OurVacation → ourvacation)
+          echo "prefix=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Check deploy secrets
+        id: deploy-check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=서버 배포 건너뜀::DEPLOY_HOST secret 이 없어서 이미지만 GHCR 에 올리고 서버 배포는 건너뜁니다."
+            exit 0
+          fi
+          if [ -z "$DEPLOY_USER" ] || [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::DEPLOY_HOST 는 있는데 DEPLOY_USER 또는 DEPLOY_SSH_KEY 가 없습니다. docs/INFRA.md 의 secrets 목록을 확인하세요."
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+  test-backend:
+    name: test (backend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ichimadi
+          POSTGRES_PASSWORD: ichimadi
+          POSTGRES_DB: ichimadi
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ichimadi -d ichimadi"
+          --health-interval 2s --health-timeout 3s --health-retries 15
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://ichimadi:ichimadi@localhost:5432/ichimadi_test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0 (이 액션은 v10 같은 메이저 태그가 없다)
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --frozen --group dev
+      - run: uv run pytest
+
+  test-frontend:
+    name: test (frontend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: node --test "tests/**/*.test.ts"
+      # 타입 검사와 빌드는 web 이미지 빌드(deploy/web.Dockerfile) 안에서 한다
+
+  image:
+    name: image (${{ matrix.app }})
+    needs: [prepare, test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write # GHCR 에 이미지 push
+    strategy:
+      matrix:
+        include:
+          - app: api
+            context: backend
+            file: backend/Dockerfile
+          - app: web
+            context: .
+            file: deploy/web.Dockerfile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Image metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ needs.prepare.outputs.prefix }}/ichimadi-${{ matrix.app }}
+          tags: |
+            type=raw,value=${{ needs.prepare.outputs.tag }}
+            type=raw,value=latest
+      # 서버(GCP e2-small)가 amd64 이므로 amd64 로만 만든다.
+      - name: Build & push
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # web: 배포 확인용 커밋 SHA(/version.txt), (선택) 체험 계정은 레포 변수 VITE_TRIAL_ACCOUNTS
+          build-args: |
+            ${{ matrix.app == 'web' && format('APP_VERSION={0}', github.sha) || '' }}
+            ${{ matrix.app == 'web' && format('VITE_TRIAL_ACCOUNTS={0}', vars.VITE_TRIAL_ACCOUNTS) || '' }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,scope=${{ matrix.app }},mode=max
+
+  deploy:
+    name: deploy to server
+    needs: [prepare, image]
+    if: needs.prepare.outputs.deploy-enabled == 'true' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read # 서버가 GHCR 이미지를 pull 할 때 이 실행의 토큰을 잠깐 빌려준다
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::DEPLOY_KNOWN_HOSTS 가 없어서 ssh-keyscan 으로 서버 공개키를 받아옵니다."
+            ssh-keyscan -p "${DEPLOY_PORT:-22}" -H "$DEPLOY_HOST" > ~/.ssh/known_hosts
+          fi
+
+      - name: Upload config and deploy
+        env:
+          IMAGE_PREFIX: ${{ needs.prepare.outputs.prefix }}
+          APP_TAG: ${{ needs.prepare.outputs.tag }}
+          APP_VERSION: ${{ github.sha }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REMOTE_PATH="${DEPLOY_PATH:-ichimadi}"
+          SSH=(ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT:-22}"
+               -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=15
+               "$DEPLOY_USER@$DEPLOY_HOST")
+          Q="$(printf '%q' "$REMOTE_PATH")"
+
+          # 1) compose.prod.yml, Caddyfile, content/ 를 서버의 .incoming/ 에 올린다 (.env 는 건드리지 않음)
+          tar -cf - compose.prod.yml Caddyfile content \
+            | "${SSH[@]}" "mkdir -p $Q && rm -rf $Q/.incoming && mkdir $Q/.incoming && tar -C $Q/.incoming -xf -"
+
+          # 2) 배포 스크립트 실행 (변수는 표준입력으로 전달해서 명령줄에 토큰이 남지 않게 한다)
+          {
+            printf 'DEPLOY_PATH=%q\nIMAGE_PREFIX=%q\nAPP_TAG=%q\nAPP_VERSION=%q\nGHCR_USER=%q\nGHCR_TOKEN=%q\n' \
+              "$REMOTE_PATH" "$IMAGE_PREFIX" "$APP_TAG" "$APP_VERSION" "$GHCR_USER" "$GHCR_TOKEN"
+            cat deploy/remote-deploy.sh
+          } | "${SSH[@]}" 'bash -s' | tee remote-output.log
+
+          # 서버 스크립트가 끝까지 실행됐다면 마지막에 "배포 완료" 줄이 있어야 한다
+          if ! grep -q '==> 배포 완료' remote-output.log; then
+            echo "::error::서버 배포 스크립트가 끝까지 실행되지 않았습니다. 위 로그를 확인하세요."
+            exit 1
+          fi
+          grep '==> 배포 완료' remote-output.log | sed 's/^==> /### /' >> "$GITHUB_STEP_SUMMARY"

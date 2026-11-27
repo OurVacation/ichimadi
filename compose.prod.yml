@@ -1,0 +1,80 @@
+# 배포용 (GCP VM 1대: e2-small, RAM 2GB). 로컬 개발은 docker-compose.yml을 쓴다.
+# 설명: docs/INFRA.md
+#
+#   web : Caddy + 프론트 빌드 결과. HTTPS 자동 발급, /api/* 는 api 로 넘기고 나머지는 화면(SPA)
+#   api : FastAPI (8000). 외부에 직접 열지 않는다
+#   db  : PostgreSQL 16. 외부에 열지 않는다
+#
+# 이미지 태그는 CD가 APP_TAG=sha-xxxxxxx, IMAGE_PREFIX=ghcr.io/<owner> 로 넘긴다.
+# 서버에서 직접 실행할 때는 .env 의 IMAGE_PREFIX 와 최신(latest) 태그를 쓴다.
+name: ichimadi
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ichimadi}
+      POSTGRES_USER: ${POSTGRES_USER:-ichimadi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD를 .env에 설정하세요}
+      TZ: Asia/Seoul
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 512m
+
+  api:
+    image: ${IMAGE_PREFIX:-ghcr.io/ourvacation}/ichimadi-api:${APP_TAG:-latest}
+    restart: unless-stopped
+    # 앱 설정(JWT_SECRET, CORS_ORIGINS, GEMINI_* 등)은 .env 에 있는 키만 넘어간다.
+    # .env 에 없는 키는 backend/app/core/config.py 의 기본값을 쓴다.
+    env_file: .env
+    environment:
+      APP_ENV: ${APP_ENV:-prod}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET을 .env에 설정하세요}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ichimadi}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ichimadi}
+      CONTENT_DIR: /content
+      # Caddy 뒤에 있으므로 X-Forwarded-* 헤더를 믿는다 (원래 요청이 https 임을 알 수 있게)
+      FORWARDED_ALLOW_IPS: "*"
+    volumes:
+      # 시드(scripts.seed)가 읽는 한마디 원본. CD가 배포할 때마다 레포의 content/ 로 갱신한다
+      - ./content:/content:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    mem_limit: 512m
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: ${IMAGE_PREFIX:-ghcr.io/ourvacation}/ichimadi-web:${APP_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-34-47-91-94.sslip.io}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data # HTTPS 인증서 보관 (지우면 다시 발급받는다)
+      - caddy-config:/config
+    mem_limit: 256m
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  caddy-data:
+  caddy-config:
