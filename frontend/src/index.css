@@ -148,6 +148,12 @@ ol {
   color: var(--ink);
 }
 
+.btn-outline {
+  background: var(--surface);
+  color: var(--red);
+  border: 2px solid var(--red);
+}
+
 .btn.wide {
   align-self: stretch;
 }
@@ -811,6 +817,12 @@ ol {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+.stamped-actions {
+  align-self: stretch;
+  display: grid;
+  gap: 12px;
 }
 
 .done-title {

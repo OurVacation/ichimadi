@@ -82,7 +82,7 @@ export const JA = {
   stamped: {
     title: '通じた！',
     toBook: 'スタンプ帳を見る',
-    toBoard: '次のひとことへ',
+    toBoard: '地図に戻る',
   },
   book: {
     title: 'イチマディ スタンプ帳',

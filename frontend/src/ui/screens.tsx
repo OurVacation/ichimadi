@@ -499,12 +499,14 @@ export function Stamped({
       <h2 className="done-title">{JA.stamped.title}</h2>
       <p className="ja">{phrase.ja}</p>
       <Progress stamps={stamps} phrases={phrases} />
-      <button className="btn wide" type="button" onClick={onBook}>
-        {JA.stamped.toBook}
-      </button>
-      <button className="link" type="button" onClick={onBoard}>
-        {JA.stamped.toBoard}
-      </button>
+      <div className="stamped-actions">
+        <button className="btn" type="button" onClick={onBoard}>
+          {JA.stamped.toBoard}
+        </button>
+        <button className="btn btn-outline" type="button" onClick={onBook}>
+          {JA.stamped.toBook}
+        </button>
+      </div>
     </main>
   )
 }
