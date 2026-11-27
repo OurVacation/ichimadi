@@ -273,7 +273,6 @@ export function Board({
   notice,
   onOpen,
   onBook,
-  onLogout,
 }: {
   profile: Profile
   stamps: Stamp[]
@@ -284,7 +283,6 @@ export function Board({
   notice: string | null
   onOpen: (p: Phrase) => void
   onBook: () => void
-  onLogout: () => void
 }) {
   const pins = placePins(phrases)
   return (
@@ -308,9 +306,6 @@ export function Board({
         <div className="me-links">
           <button className="link" type="button" onClick={onBook}>
             {JA.board.book}
-          </button>
-          <button className="link" type="button" onClick={() => window.confirm(JA.board.logoutConfirm) && onLogout()}>
-            {JA.board.logout}
           </button>
         </div>
       </div>
@@ -523,6 +518,7 @@ export function Book({
   onClose,
   onReopen,
   onBack,
+  onLogout,
 }: {
   profile: Profile
   stamps: Stamp[]
@@ -531,8 +527,15 @@ export function Book({
   onClose: () => void
   onReopen: () => void
   onBack: () => void
+  onLogout: () => void
 }) {
   const p = bookProgress(stamps, phrases)
+  // 한마디판의 도장첩 링크 옆에 있으면 잘못 누르기 쉬워서 도장첩 맨 아래에 둔다 (폰을 다음 사람에게 넘길 때)
+  const logout = (
+    <button className="link logout" type="button" onClick={() => window.confirm(JA.board.logoutConfirm) && onLogout()}>
+      {JA.board.logout}
+    </button>
+  )
 
   if (closed) {
     return (
@@ -550,6 +553,7 @@ export function Book({
         <button className="link" type="button" onClick={onBack}>
           {JA.book.back}
         </button>
+        {logout}
       </main>
     )
   }
@@ -591,6 +595,7 @@ export function Book({
           {JA.book.close}
         </button>
       )}
+      {logout}
     </main>
   )
 }

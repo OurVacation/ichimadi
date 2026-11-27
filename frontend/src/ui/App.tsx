@@ -203,7 +203,6 @@ export function App({
           notice={stampNotice}
           onOpen={(phrase) => dispatch({ type: 'openPouch', phrase, instant: reducedMotion() })}
           onBook={() => dispatch({ type: 'toBook' })}
-          onLogout={signOut}
         />
       )
     case 'opening':
@@ -243,6 +242,7 @@ export function App({
           onClose={() => dispatch({ type: 'closeBook' })}
           onReopen={() => dispatch({ type: 'openBook' })}
           onBack={() => dispatch({ type: 'toBoard' })}
+          onLogout={signOut}
         />
       )
   }

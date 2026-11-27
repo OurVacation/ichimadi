@@ -181,6 +181,11 @@ ol {
   font-size: 0.95rem;
 }
 
+.link.logout {
+  margin-top: auto;
+  align-self: center;
+}
+
 .link.back {
   align-self: flex-start;
   text-decoration: none;
