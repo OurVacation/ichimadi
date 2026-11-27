@@ -1,11 +1,36 @@
+# 로컬 개발용. 배포는 compose.prod.yml을 사용한다.
 services:
-  backend:
-    build: ./backend
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ichimadi
+      POSTGRES_PASSWORD: ichimadi
+      POSTGRES_DB: ichimadi
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ichimadi -d ichimadi"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build:
+      context: ./backend
+      args:
+        UV_SYNC_ARGS: --group dev
     ports:
       - "8000:8000"
     env_file:
       - path: ./backend/.env
         required: false
     volumes:
-      - ./backend/app:/app/app:ro
+      - ./backend:/app
+      - ./docs/api:/docs/api
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

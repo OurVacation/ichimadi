@@ -1,10 +1,19 @@
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.health import router as health_router
 from app.core.config import settings
+from app.core.errors import register_error_handlers
+from app.routers import health
+from app.schemas.error import ErrorResponse
 
-app = FastAPI(title=settings.app_name)
+app = FastAPI(
+    title=settings.app_name,
+    docs_url="/api/docs",
+    redoc_url=None,
+    openapi_url="/api/openapi.json",
+    # 기본 422 스키마({"detail": ...}) 대신 실제 에러 형식을 계약에 남긴다.
+    responses={422: {"model": ErrorResponse}},
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -12,5 +21,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+register_error_handlers(app)
 
-app.include_router(health_router)
+api_router = APIRouter(prefix="/api")
+api_router.include_router(health.router)
+app.include_router(api_router)
