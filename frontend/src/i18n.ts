@@ -32,6 +32,8 @@ export const JA = {
     preview: 'あなたのハンコ',
     confirm: 'この名前に決める',
     back: '動物を選び直す',
+    noteReading: 'お名前の韓国語読み',
+    notePopular: '韓国でよくある名前',
   },
   board: {
     stamps: 'スタンプ',

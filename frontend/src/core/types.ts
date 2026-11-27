@@ -45,5 +45,14 @@ export interface Store {
   addStamp(accountId: string, phraseId: string, at?: Date): Promise<Stamp[]>
 }
 
+/** 한국식 이름 후보 하나. note는 왜 이 이름인지 (일본어, 없어도 된다) */
+export type NameCandidate = { name: string; note?: string }
+
+/**
+ * 이름 짓기를 끼우는 자리. 일본 이름 전체(성+이름)를 받아 후보를 돌려준다.
+ * 지금은 임시 규칙(core/nameGenerator.ts), 팀원의 AI가 오면 main.tsx에서 이것만 바꿔 끼운다.
+ */
+export type NameGenerator = (fullName: string) => Promise<NameCandidate[]>
+
 /** 로그인 직후 갈 화면 */
 export type FirstScreen = 'animal' | 'name' | 'board'
