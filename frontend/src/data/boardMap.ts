@@ -10,3 +10,12 @@ export const POUCH_SPOTS: Record<string, Spot> = {
   q5: { x: 27, y: 77 },
   q6: { x: 72, y: 88 },
 }
+
+export type Pin<P> = { phrase: P; spot: Spot; n: number }
+
+/** 한마디 순서대로 지도 자리를 붙인다. 자리가 없는 한마디(지도에 없는 새 id)는 지도에서 뺀다. n은 지도 위 번호(1부터) */
+export function placePins<P extends { id: string }>(phrases: P[]): Pin<P>[] {
+  return phrases
+    .filter((phrase) => phrase.id in POUCH_SPOTS)
+    .map((phrase, i) => ({ phrase, spot: POUCH_SPOTS[phrase.id], n: i + 1 }))
+}

@@ -1,10 +1,17 @@
 // W-03 (H-01), W-12 (H-02): 로그인 뒤 어디로 가는가
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { firstScreen, signIn } from '../src/core/session.ts'
+import { firstScreen } from '../src/core/session.ts'
 import { createLocalStore } from '../src/core/store.ts'
 import { parseTrialAccounts } from '../src/data/accounts.ts'
+import type { Store } from '../src/core/types.ts'
 import { memoryStorage } from './helpers.ts'
+
+// App이 로그인 직후 하는 일: 로그인 → 내 정보 → 처음 화면
+async function signIn(store: Store, id: string, password: string) {
+  const r = await store.login(id, password)
+  return r && { accountId: r.accountId, screen: firstScreen(await store.getProfile(r.accountId)) }
+}
 
 test('체험 계정 설정 문자열을 읽는다: 형식이 틀린 것과 겹치는 아이디는 버린다', () => {
   assert.deepEqual(parseTrialAccounts('judge01:1111, judge02:2222,bad,:3333,judge01:9999,judge03:'), [
