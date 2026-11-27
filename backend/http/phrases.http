@@ -1,0 +1,13 @@
+@baseUrl = http://localhost:8000
+
+### Categories (public)
+GET {{baseUrl}}/api/phrase-sets
+
+### All phrases (public)
+GET {{baseUrl}}/api/phrases
+
+### One category
+GET {{baseUrl}}/api/phrases?set_code=hackathon
+
+### Unknown category: 404 unknown_phrase_set
+GET {{baseUrl}}/api/phrases?set_code=nope

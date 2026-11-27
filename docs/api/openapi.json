@@ -298,6 +298,96 @@
           }
         ]
       }
+    },
+    "/api/phrase-sets": {
+      "get": {
+        "tags": [
+          "phrases"
+        ],
+        "summary": "한마디 카테고리 목록",
+        "operationId": "get_phrase_sets_api_phrase_sets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSetsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/phrases": {
+      "get": {
+        "tags": [
+          "phrases"
+        ],
+        "summary": "한마디 목록",
+        "operationId": "get_phrases_api_phrases_get",
+        "parameters": [
+          {
+            "name": "set_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Set Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhrasesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -475,6 +565,169 @@
         "examples": [
           {
             "account_id": "judge01"
+          }
+        ]
+      },
+      "PhraseItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "set_code": {
+            "type": "string",
+            "title": "Set Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "ko": {
+            "type": "string",
+            "title": "Ko"
+          },
+          "kana": {
+            "type": "string",
+            "title": "Kana"
+          },
+          "ja": {
+            "type": "string",
+            "title": "Ja"
+          },
+          "when": {
+            "type": "string",
+            "title": "When"
+          },
+          "reply": {
+            "type": "string",
+            "title": "Reply"
+          },
+          "reply_kana": {
+            "type": "string",
+            "title": "Reply Kana"
+          },
+          "reply_ja": {
+            "type": "string",
+            "title": "Reply Ja"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "set_code",
+          "label",
+          "ko",
+          "kana",
+          "ja",
+          "when",
+          "reply",
+          "reply_kana",
+          "reply_ja"
+        ],
+        "title": "PhraseItem",
+        "examples": [
+          {
+            "id": "q1",
+            "ja": "どんなアプリですか？",
+            "kana": "オットン エビンガヨ?",
+            "ko": "어떤 앱인가요?",
+            "label": "はじめまして",
+            "reply": "일본인을 위한 ○○ 앱이에요",
+            "reply_ja": "日本人のための○○アプリです",
+            "reply_kana": "イルボニヌル ウィハン ○○ エビエヨ",
+            "set_code": "hackathon",
+            "when": "他のチームのブースに初めて行ったとき"
+          }
+        ]
+      },
+      "PhraseSetItem": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name_ja": {
+            "type": "string",
+            "title": "Name Ja"
+          },
+          "phrase_count": {
+            "type": "integer",
+            "title": "Phrase Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name_ja",
+          "phrase_count"
+        ],
+        "title": "PhraseSetItem",
+        "examples": [
+          {
+            "code": "hackathon",
+            "name_ja": "ハッカソン会場",
+            "phrase_count": 6
+          }
+        ]
+      },
+      "PhraseSetsResponse": {
+        "properties": {
+          "phrase_sets": {
+            "items": {
+              "$ref": "#/components/schemas/PhraseSetItem"
+            },
+            "type": "array",
+            "title": "Phrase Sets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrase_sets"
+        ],
+        "title": "PhraseSetsResponse",
+        "examples": [
+          {
+            "phrase_sets": [
+              {
+                "code": "hackathon",
+                "name_ja": "ハッカソン会場",
+                "phrase_count": 6
+              }
+            ]
+          }
+        ]
+      },
+      "PhrasesResponse": {
+        "properties": {
+          "phrases": {
+            "items": {
+              "$ref": "#/components/schemas/PhraseItem"
+            },
+            "type": "array",
+            "title": "Phrases"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrases"
+        ],
+        "title": "PhrasesResponse",
+        "examples": [
+          {
+            "phrases": [
+              {
+                "id": "q1",
+                "ja": "どんなアプリですか？",
+                "kana": "オットン エビンガヨ?",
+                "ko": "어떤 앱인가요?",
+                "label": "はじめまして",
+                "reply": "일본인을 위한 ○○ 앱이에요",
+                "reply_ja": "日本人のための○○アプリです",
+                "reply_kana": "イルボニヌル ウィハン ○○ エビエヨ",
+                "set_code": "hackathon",
+                "when": "他のチームのブースに初めて行ったとき"
+              }
+            ]
           }
         ]
       },
