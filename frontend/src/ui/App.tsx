@@ -157,15 +157,23 @@ export function App({
     handledQr.current = qrLogin
     // QR 카드로 열었으면 저장된 로그인보다 카드가 먼저다. 깨진 QR이면 로그인 화면에 알림만 둔다
     if (qrLogin.kind === 'login') {
+      // 열린 탭에서 다른 QR을 읽은 경우: 지금 사람을 먼저 내보낸다
+      gate.cancel()
+      outbox.stop()
+      setFailedLoad(null)
+      setRestoring(true)
+      dispatch({ type: 'signOut' })
       login(qrLogin.id, qrLogin.password).then((message) => {
         setNotice(message)
         if (message) setRestoring(false)
       })
-    } else if (qrLogin.kind === 'none') {
+    } else if (qrLogin.kind === 'malformed') {
+      setNotice(JA.login.qrBroken)
+    } else {
       const accountId = session.load()
       if (accountId) enter(accountId)
     }
-  }, [session, qrLogin, login, enter])
+  }, [session, qrLogin, login, enter, gate, outbox])
 
   if (failedLoad) return <LoadFailed message={failedLoad.message} onRetry={() => enter(failedLoad.accountId)} onLogout={signOut} />
   if (!state) return restoring ? <Loading /> : <Login onSubmit={login} notice={notice} />
