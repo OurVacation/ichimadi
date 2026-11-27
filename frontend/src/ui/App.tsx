@@ -44,12 +44,12 @@ export function App({
 
   useEffect(() => {
     let live = true
-    // QR 카드로 열었으면 저장된 로그인보다 카드의 계정이 먼저다
+    // QR 카드로 열었으면 저장된 로그인보다 카드가 먼저다. 깨진 QR이면 로그인 화면에 알림만 둔다
     if (qrLogin.kind === 'login') {
       login(qrLogin.id, qrLogin.password).then((r) => {
         if (live) setNotice(r === 'ok' ? 'none' : r)
       })
-    } else {
+    } else if (qrLogin.kind === 'none') {
       const accountId = session.load()
       if (accountId) {
         Promise.all([store.getProfile(accountId), store.getStamps(accountId)])
