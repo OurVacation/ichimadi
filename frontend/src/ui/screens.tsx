@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Animal, NameCandidate, NameGenerator, Phrase, Profile, Stamp } from '../core/types.ts'
+import { errorMessage } from '../api/client.ts'
 import { hangulName } from '../core/names.ts'
 import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
@@ -10,35 +11,26 @@ import { MapArt } from './map.tsx'
 import { Pouch } from './parts.tsx'
 import { ANIMALS, Seal } from './stamps.tsx'
 
-/** 저장 결과. 실패하면 화면이 다시 누르게 한다. */
-type Result = Promise<boolean>
+/** 저장 결과. 실패하면 보여 줄 문구, 성공하면 null. 실패하면 화면이 다시 누르게 한다. */
+type Result = Promise<string | null>
 
 const stampOf = (stamps: Stamp[], phraseId: string) => stamps.find((s) => s.phraseId === phraseId)
 
-/** 로그인 화면 아래 알림 */
-export type LoginNotice = 'none' | 'failed' | 'error' | 'qrBroken' | 'expired'
-const NOTICE_TEXT = { failed: JA.login.failed, error: JA.error, qrBroken: JA.login.qrBroken, expired: JA.login.expired }
-
-export function Login({
-  onSubmit,
-  notice = 'none',
-}: {
-  onSubmit: (id: string, password: string) => Promise<'ok' | 'failed' | 'error'>
-  notice?: LoginNotice
-}) {
+/** notice: 로그인 화면 아래 알림 (QR 실패, 로그인 끊김). 직접 로그인하면 그 결과로 바뀐다 */
+export function Login({ onSubmit, notice = null }: { onSubmit: (id: string, password: string) => Result; notice?: string | null }) {
   const [id, setId] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
-  const [own, setOwn] = useState<LoginNotice | null>(null)
-  const shown = own ?? notice
+  const [own, setOwn] = useState<string | null | undefined>(undefined)
+  const shown = own === undefined ? notice : own
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
-    setOwn('none')
-    const r = await onSubmit(id.trim(), password)
+    setOwn(null)
+    const message = await onSubmit(id.trim(), password)
     setBusy(false)
-    setOwn(r === 'ok' ? 'none' : r)
+    setOwn(message)
   }
 
   return (
@@ -76,9 +68,9 @@ export function Login({
             required
           />
         </label>
-        {shown !== 'none' && (
+        {shown && (
           <p className="error" role="alert">
-            {NOTICE_TEXT[shown]}
+            {shown}
           </p>
         )}
         <button className="btn" type="submit" disabled={busy}>
@@ -93,7 +85,10 @@ export function Login({
 const NAME_DEBOUNCE_MS = 500
 
 type Names =
-  { kind: 'empty' } | { kind: 'waiting' } | { kind: 'ready'; candidates: NameCandidate[] } | { kind: 'failed' }
+  | { kind: 'empty' }
+  | { kind: 'waiting' }
+  | { kind: 'ready'; candidates: NameCandidate[] }
+  | { kind: 'failed'; message: string }
 
 /** 처음 설정: 위에 이름, 아래에 동물. 이름을 기다리는 동안 동물을 고를 수 있다. 결정은 둘 다 정한 뒤 한 번 */
 export function Setup({
@@ -111,7 +106,7 @@ export function Setup({
   /** 이름을 패스하면 동물만 있는 도장. 빈 이름('')으로 저장한다 */
   const [passName, setPassName] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<string | null>(null)
 
   useEffect(() => {
     const fullName = input.trim()
@@ -130,7 +125,7 @@ export function Setup({
     const timer = setTimeout(() => {
       generateNames(fullName).then(
         (candidates) => live && setNames({ kind: 'ready', candidates }),
-        () => live && setNames({ kind: 'failed' }),
+        (e: unknown) => live && setNames({ kind: 'failed', message: errorMessage(e, JA.name.failed) }),
       )
     }, NAME_DEBOUNCE_MS)
     return () => {
@@ -146,9 +141,9 @@ export function Setup({
   async function confirm() {
     if (!animal || koreanName === null) return
     setBusy(true)
-    const ok = await onConfirm({ animal, koreanName })
+    const message = await onConfirm({ animal, koreanName })
     setBusy(false)
-    setFailed(!ok)
+    setFailed(message)
   }
 
   return (
@@ -182,7 +177,7 @@ export function Setup({
           {names.kind === 'waiting' && <p className="muted waiting">{JA.name.waiting}</p>}
           {names.kind === 'failed' && (
             <p className="error">
-              {JA.name.failed}{' '}
+              {names.message}{' '}
               <button className="link" type="button" onClick={() => setAttempt((n) => n + 1)}>
                 {JA.name.retry}
               </button>
@@ -235,7 +230,7 @@ export function Setup({
       )}
       {failed && (
         <p className="error" role="alert">
-          {JA.error}
+          {failed}
         </p>
       )}
       <button
@@ -351,7 +346,7 @@ export function Loading() {
 }
 
 /** 로그인 뒤 한마디나 내 정보를 못 받았을 때. 다시 시도하거나 로그아웃한다 */
-export function LoadFailed({ onRetry, onLogout }: { onRetry: () => Promise<void>; onLogout: () => void }) {
+export function LoadFailed({ message, onRetry, onLogout }: { message: string; onRetry: () => Promise<void>; onLogout: () => void }) {
   const [busy, setBusy] = useState(false)
   async function retry() {
     setBusy(true)
@@ -362,7 +357,7 @@ export function LoadFailed({ onRetry, onLogout }: { onRetry: () => Promise<void>
     <main className="page center stack">
       <h2>{JA.load.title}</h2>
       <p className="muted" role="alert">
-        {JA.load.lead}
+        {message}
       </p>
       <button className="btn wide" type="button" disabled={busy} onClick={retry}>
         {busy ? JA.load.busy : JA.load.retry}
@@ -434,12 +429,12 @@ export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () =>
 
 export function Partner({ phrase, onOk, onAgain }: { phrase: Phrase; onOk: () => Result; onAgain: () => void }) {
   const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<string | null>(null)
   async function ok() {
     setBusy(true)
-    const saved = await onOk()
+    const message = await onOk()
     setBusy(false)
-    setFailed(!saved)
+    setFailed(message)
   }
   return (
     <main className="partner" lang="ko">
@@ -454,6 +449,9 @@ export function Partner({ phrase, onOk, onAgain }: { phrase: Phrase; onOk: () =>
       {failed && (
         <p className="partner-error" role="alert">
           {PARTNER.saveFailed}
+          <span className="partner-error-ja" lang="ja">
+            {failed}
+          </span>
         </p>
       )}
       <button className="partner-ok" type="button" disabled={busy} onClick={ok}>

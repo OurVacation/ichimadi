@@ -16,6 +16,14 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * 화면에 보일 문구. 서버 에러는 서버의 message_ja, 통신 실패·시간 초과는 위에서 넣은 일본어 안내,
+ * 그 밖(서버 밖의 실패)은 fallback
+ */
+export function errorMessage(e: unknown, fallback: string = JA.error): string {
+  return e instanceof ApiError ? e.messageJa : fallback
+}
+
 /** 응답 본문을 확인해 쓸 모양으로 바꾼다. 모양이 다르면 null */
 export type Parse<T> = (body: unknown) => T | null
 

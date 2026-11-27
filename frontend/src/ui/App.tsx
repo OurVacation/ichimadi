@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { NameGenerator, PhraseSource, Store } from '../core/types.ts'
+import { errorMessage } from '../api/client.ts'
 import type { LoginHash } from '../core/loginHash.ts'
+import { JA } from '../i18n.ts'
 import { firstScreen } from '../core/session.ts'
 import { createEnterGate } from './enterGate.ts'
 import { reduce } from './flow.ts'
-import { Board, Book, Card, LoadFailed, Loading, Login, Opening, Partner, Setup, Stamped, type LoginNotice } from './screens.tsx'
+import { Board, Book, Card, LoadFailed, Loading, Login, Opening, Partner, Setup, Stamped } from './screens.tsx'
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
@@ -33,9 +35,10 @@ export function App({
   loadPhrases: PhraseSource
 }) {
   const [state, dispatch] = useReducer(reduce, null)
-  const [notice, setNotice] = useState<LoginNotice>(qrLogin.kind === 'malformed' ? 'qrBroken' : 'none')
-  /** 로그인은 됐는데 한마디·내 정보를 못 받은 계정. 다시 시도 화면을 보인다 */
-  const [failedLoad, setFailedLoad] = useState<string | null>(null)
+  /** 로그인 화면 아래 알림 */
+  const [notice, setNotice] = useState<string | null>(qrLogin.kind === 'malformed' ? JA.login.qrBroken : null)
+  /** 로그인은 됐는데 한마디·내 정보를 못 받은 계정과 그 이유. 다시 시도 화면을 보인다 */
+  const [failedLoad, setFailedLoad] = useState<{ accountId: string; message: string } | null>(null)
   /** 저장된 로그인을 되살리거나 QR로 로그인하는 중. 그동안 로그인 폼을 보이지 않는다 (다른 사람이 끼어들지 않게) */
   const [restoring, setRestoring] = useState(() => qrLogin.kind === 'login' || (qrLogin.kind === 'none' && session.load() !== null))
   const gate = useMemo(() => createEnterGate(() => session.load()), [session])
@@ -56,7 +59,7 @@ export function App({
         gate.cancel()
         setFailedLoad(null)
         setRestoring(false)
-        setNotice('expired')
+        setNotice(JA.login.expired)
         dispatch({ type: 'signOut' })
       }),
     [session, gate],
@@ -71,9 +74,9 @@ export function App({
         if (!current()) return
         setFailedLoad(null)
         dispatch({ type: 'signedIn', accountId, profile, stamps, phrases, first: firstScreen(profile) })
-      } catch {
+      } catch (e) {
         // 로그인이 끊겨서(401) 실패했으면 current()가 false다. 로그인 화면이 맞다
-        if (current()) setFailedLoad(accountId)
+        if (current()) setFailedLoad({ accountId, message: errorMessage(e, JA.load.lead) })
       } finally {
         if (current()) setRestoring(false)
       }
@@ -81,16 +84,17 @@ export function App({
     [store, loadPhrases, gate],
   )
 
+  /** 실패하면 보여 줄 문구, 성공하면 null */
   const login = useCallback(
-    async (id: string, password: string) => {
+    async (id: string, password: string): Promise<string | null> => {
       try {
         const r = await store.login(id, password)
-        if (!r) return 'failed' as const
+        if (!r) return JA.login.failed
         session.save(r.accountId)
         await enter(r.accountId)
-        return 'ok' as const
-      } catch {
-        return 'error' as const
+        return null
+      } catch (e) {
+        return errorMessage(e)
       }
     },
     [store, session, enter],
@@ -102,9 +106,9 @@ export function App({
     handledQr.current = qrLogin
     // QR 카드로 열었으면 저장된 로그인보다 카드가 먼저다. 깨진 QR이면 로그인 화면에 알림만 둔다
     if (qrLogin.kind === 'login') {
-      login(qrLogin.id, qrLogin.password).then((r) => {
-        setNotice(r === 'ok' ? 'none' : r)
-        if (r !== 'ok') setRestoring(false)
+      login(qrLogin.id, qrLogin.password).then((message) => {
+        setNotice(message)
+        if (message) setRestoring(false)
       })
     } else if (qrLogin.kind === 'none') {
       const accountId = session.load()
@@ -112,7 +116,7 @@ export function App({
     }
   }, [session, qrLogin, login, enter])
 
-  if (failedLoad) return <LoadFailed onRetry={() => enter(failedLoad)} onLogout={signOut} />
+  if (failedLoad) return <LoadFailed message={failedLoad.message} onRetry={() => enter(failedLoad.accountId)} onLogout={signOut} />
   if (!state) return restoring ? <Loading /> : <Login onSubmit={login} notice={notice} />
 
   const { accountId, profile, stamps, phrases, screen } = state
@@ -121,9 +125,9 @@ export function App({
     try {
       await store.saveProfile(accountId, next)
       dispatch({ type: 'profileSaved', profile: next })
-      return true
-    } catch {
-      return false
+      return null
+    } catch (e) {
+      return errorMessage(e)
     }
   }
 
@@ -154,9 +158,9 @@ export function App({
             try {
               const next = await store.addStamp(accountId, screen.phrase.id)
               dispatch({ type: 'stamped', stamps: next })
-              return true
-            } catch {
-              return false
+              return null
+            } catch (e) {
+              return errorMessage(e)
             }
           }}
         />

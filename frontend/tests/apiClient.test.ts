@@ -1,7 +1,7 @@
 // 서버 연결: fetch 감싸개(에러 모양, 시간 초과)와 서버 Store(모양 바꾸기, 토큰 유지·401)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { ApiError, createApiClient } from '../src/api/client.ts'
+import { ApiError, createApiClient, errorMessage } from '../src/api/client.ts'
 import { createApiStore } from '../src/api/store.ts'
 import { JA } from '../src/i18n.ts'
 import { fakeFetch, memoryStorage, type Call } from './helpers.ts'
@@ -240,4 +240,19 @@ test('늦게 온 지난 계정 요청의 401은 그 사이에 로그인한 다�
   assert.equal((await rejection(stale)).status, 401)
   assert.equal(client.accountId(), 'b01')
   assert.equal(notified, 0)
+})
+
+test('화면 문구: 서버 에러는 message_ja, 통신 실패·시간 초과는 일본어 안내, 그 밖은 일반 문구', async () => {
+  const serverError = await rejection(
+    createApiClient({ fetch: fakeFetch(() => [404, { code: 'unknown_phrase', message_ja: 'この一言は見つかりませんでした' }]).fetch, storage: memoryStorage() }).request('GET', '/x', { parse: anything }),
+  )
+  const offline = await rejection(createApiClient({ fetch: fakeFetch(() => 'offline').fetch, storage: memoryStorage() }).request('GET', '/x', { parse: anything }))
+  const timeout = await rejection(
+    createApiClient({ fetch: fakeFetch(() => 'hang').fetch, storage: memoryStorage(), timeoutMs: 20 }).request('GET', '/x', { parse: anything }),
+  )
+  assert.equal(errorMessage(serverError), 'この一言は見つかりませんでした')
+  assert.equal(errorMessage(offline), JA.network.offline)
+  assert.equal(errorMessage(timeout), JA.network.timeout)
+  assert.equal(errorMessage(new Error('local')), JA.error)
+  assert.equal(errorMessage(new Error('local'), JA.load.lead), JA.load.lead)
 })

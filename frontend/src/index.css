@@ -685,6 +685,12 @@ ol {
   font-weight: 700;
 }
 
+.partner-error-ja {
+  display: block;
+  font-family: var(--f-ja);
+  font-size: 0.9rem;
+}
+
 .partner-ok {
   width: 100%;
   max-width: 480px;
