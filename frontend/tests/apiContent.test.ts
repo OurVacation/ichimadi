@@ -112,15 +112,36 @@ test('한마디: 서버가 안 되고 남긴 것도 없으면 거절한다 (화�
   }
 })
 
-test('한마디: 빈 목록이나 칸이 빠진 응답은 쓰지 않고 남긴 것을 쓴다. 망가진 캐시는 없는 것과 같다', async () => {
-  const storage = memoryStorage()
-  storage.setItem('ichimadi:phrases:hackathon', JSON.stringify([PHRASE]))
-  const { reply_kana: _drop, ...missing } = ITEM
-  for (const body of [{ phrases: [] }, { phrases: [missing] }, { nope: 1 }]) {
-    const { client } = clientWith(() => [200, body], storage)
+test('한마디: 남긴 것은 서버에 닿지 못할 때만 쓴다 (통신 실패·시간 초과·5xx)', async () => {
+  const replies: Reply[] = [() => 'offline', () => 'hang', () => [500, 'oops'], () => [503, { code: 'x', message_ja: 'x' }]]
+  for (const reply of replies) {
+    const storage = memoryStorage()
+    storage.setItem('ichimadi:phrases:hackathon', JSON.stringify([PHRASE]))
+    const client = createApiClient({ fetch: fakeFetch(reply).fetch, storage, timeoutMs: 20 })
     assert.deepEqual(await createApiPhraseSource(client, storage)(), [PHRASE])
   }
+})
+
+test('한마디: 서버가 404나 이상한 응답(빈 목록, 칸 빠짐)을 주면 남긴 것을 지우고 거절한다', async () => {
+  const { reply_kana: _drop, ...missing } = ITEM
+  const replies: Reply[] = [
+    () => [404, { code: 'unknown_phrase_set', message_ja: 'このカテゴリは見つかりませんでした' }],
+    () => [200, { phrases: [] }],
+    () => [200, { phrases: [missing] }],
+    () => [200, { nope: 1 }],
+  ]
+  for (const reply of replies) {
+    const storage = memoryStorage()
+    storage.setItem('ichimadi:phrases:hackathon', JSON.stringify([PHRASE]))
+    const { client } = clientWith(reply, storage)
+    await assert.rejects(createApiPhraseSource(client, storage)(), ApiError)
+    assert.equal(storage.getItem('ichimadi:phrases:hackathon'), null)
+  }
+})
+
+test('한마디: 망가진 캐시는 없는 것과 같다', async () => {
+  const storage = memoryStorage()
   storage.setItem('ichimadi:phrases:hackathon', '{broken')
-  const { client } = clientWith(() => [200, { phrases: [] }], storage)
-  await assert.rejects(createApiPhraseSource(client, storage)(), (e) => e instanceof ApiError && e.code === 'bad_response')
+  const { client } = clientWith(() => 'offline', storage)
+  await assert.rejects(createApiPhraseSource(client, storage)(), (e) => e instanceof ApiError && e.code === 'network_error')
 })

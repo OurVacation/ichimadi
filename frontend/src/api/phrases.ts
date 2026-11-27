@@ -1,9 +1,10 @@
-// 한마디는 서버에서 받는다 (GET /api/phrases). 받으면 기기에 남겨 두고, 서버가 안 되면 남겨 둔 것을 쓴다.
+// 한마디는 서버에서 받는다 (GET /api/phrases). 받으면 기기에 남겨 두고, 서버에 닿지 못하면(통신 실패·시간 초과·5xx) 남겨 둔 것을 쓴다.
+// 서버가 답했는데 404나 이상한 응답이면 남겨 둔 것도 믿지 않는다 (지우고 에러).
 // 로그인 직후 한 번 받아 메모리에 두므로 카드는 네트워크를 기다리지 않는다.
 import type { Phrase, PhraseSource } from '../core/types.ts'
 import type { KeyValueStorage } from '../core/store.ts'
 import type { components } from './schema.d.ts'
-import { isRecord, type ApiClient } from './client.ts'
+import { ApiError, isRecord, type ApiClient } from './client.ts'
 
 type PhraseItem = components['schemas']['PhraseItem']
 
@@ -45,6 +46,11 @@ export function createApiPhraseSource(client: ApiClient, storage: KeyValueStorag
       storage.setItem(cacheKey, JSON.stringify(phrases))
       return phrases
     } catch (e) {
+      const answered = e instanceof ApiError && e.status !== 0 && e.status < 500
+      if (answered) {
+        if (e.status === 404 || e.code === 'bad_response') storage.removeItem(cacheKey)
+        throw e
+      }
       let cached: Phrase[] | null = null
       try {
         cached = parseCached(JSON.parse(storage.getItem(cacheKey) ?? 'null'))
