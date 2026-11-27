@@ -71,7 +71,7 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0 (이 액션은 v10 같은 메이저 태그가 없다)
         with:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
