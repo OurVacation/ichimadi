@@ -160,6 +160,7 @@ export function App({
       // 열린 탭에서 다른 QR을 읽은 경우: 지금 사람을 먼저 내보낸다
       gate.cancel()
       outbox.stop()
+      session.save(null)
       setFailedLoad(null)
       setRestoring(true)
       dispatch({ type: 'signOut' })
