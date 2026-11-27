@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useReducer, useState } from 'react'
-import type { Animal, Store } from '../core/types.ts'
+import type { NameGenerator, Store } from '../core/types.ts'
 import type { LoginHash } from '../core/loginHash.ts'
 import { firstScreen, signIn } from '../core/session.ts'
 import { reduce } from './flow.ts'
-import { AnimalPick, Board, Book, Card, Login, NamePick, Opening, Partner, Stamped, type LoginNotice } from './screens.tsx'
+import { Board, Book, Card, Login, Opening, Partner, Setup, Stamped, type LoginNotice } from './screens.tsx'
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
@@ -11,7 +11,17 @@ const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce
 export type Session = { load(): string | null; save(accountId: string | null): void }
 
 /** 저장은 store로만 한다 (P-05). 저장이 끝난 결과만 흐름(reduce)에 넣는다. */
-export function App({ store, session, qrLogin }: { store: Store; session: Session; qrLogin: LoginHash }) {
+export function App({
+  store,
+  session,
+  qrLogin,
+  generateNames,
+}: {
+  store: Store
+  session: Session
+  qrLogin: LoginHash
+  generateNames: NameGenerator
+}) {
   const [state, dispatch] = useReducer(reduce, null)
   const [notice, setNotice] = useState<LoginNotice>(qrLogin.kind === 'login' ? 'checking' : qrLogin.kind === 'malformed' ? 'qrBroken' : 'none')
   const pouchOpened = useCallback(() => dispatch({ type: 'pouchOpened' }), [])
@@ -69,16 +79,8 @@ export function App({ store, session, qrLogin }: { store: Store; session: Sessio
   }
 
   switch (screen.kind) {
-    case 'animal':
-      return <AnimalPick onPick={(animal: Animal) => saveProfile({ ...profile, animal })} />
-    case 'name':
-      return (
-        <NamePick
-          animal={profile.animal}
-          onConfirm={(koreanName) => saveProfile({ ...profile, koreanName })}
-          onBack={() => dispatch({ type: 'reselectAnimal' })}
-        />
-      )
+    case 'setup':
+      return <Setup generateNames={generateNames} onConfirm={saveProfile} />
     case 'board':
       return (
         <Board

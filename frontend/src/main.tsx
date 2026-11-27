@@ -2,6 +2,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { parseLoginHash } from './core/loginHash.ts'
+import { temporaryNameGenerator } from './core/nameGenerator.ts'
 import { createLocalStore, openStorage } from './core/store.ts'
 import { TRIAL_ACCOUNTS } from './data/accounts.ts'
 import { App } from './ui/App.tsx'
@@ -35,6 +36,6 @@ if (qrLogin.kind !== 'none') history.replaceState(null, '', window.location.path
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App store={store} session={session} qrLogin={qrLogin} />
+    <App store={store} session={session} qrLogin={qrLogin} generateNames={temporaryNameGenerator} />
   </StrictMode>,
 )

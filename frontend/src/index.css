@@ -216,54 +216,79 @@ ol {
   outline: none;
 }
 
-/* animal */
+/* setup */
 .animal-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.animal {
-  min-height: 132px;
-  border: 2px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  display: grid;
-  place-items: center;
-  gap: 4px;
-  padding: 12px;
-  font-weight: 700;
-}
-
-.animal:active {
-  border-color: var(--red);
-}
-
-.animal-emoji {
-  font-size: 3.4rem;
-  line-height: 1;
-}
-
-/* name */
-.candidates {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
-.candidate {
-  min-height: 56px;
+.animal {
+  min-height: 96px;
+  min-width: 0;
   border: 2px solid var(--line);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--surface);
-  font-size: 1.3rem;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 8px 4px;
   font-weight: 700;
+  font-size: 0.85rem;
 }
 
+.animal-emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.animal.is-picked,
 .candidate.is-picked {
   border-color: var(--red);
   background: var(--red-soft);
   color: var(--red-deep);
+}
+
+/* 후보가 나타나도 아래 동물 칸이 덜 밀리게 자리를 잡아 둔다 */
+.names {
+  min-height: 92px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.names .link {
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--red-deep);
+}
+
+.candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.candidate {
+  min-height: 64px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  padding: 6px 4px;
+}
+
+.candidate b {
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.candidate small {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--muted);
 }
 
 .preview {

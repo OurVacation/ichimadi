@@ -18,7 +18,7 @@ export type Phrase = {
   replyJa: string
 }
 
-/** 처음 로그인할 때 정하는 것. 둘 다 정해야 한마디판으로 간다. */
+/** 처음 로그인할 때 설정 화면 하나에서 같이 정한다. 둘 다 정해야 한마디판으로 간다. */
 export type Profile = {
   animal: Animal | null
   koreanName: string | null
@@ -55,4 +55,4 @@ export type NameCandidate = { name: string; note?: string }
 export type NameGenerator = (fullName: string) => Promise<NameCandidate[]>
 
 /** 로그인 직후 갈 화면 */
-export type FirstScreen = 'animal' | 'name' | 'board'
+export type FirstScreen = 'setup' | 'board'

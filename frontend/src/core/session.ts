@@ -1,9 +1,7 @@
 import type { FirstScreen, Profile, Store } from './types.ts'
 
 export function firstScreen(profile: Profile): FirstScreen {
-  if (profile.animal === null) return 'animal'
-  if (profile.koreanName === null) return 'name'
-  return 'board'
+  return profile.animal !== null && profile.koreanName !== null ? 'board' : 'setup'
 }
 
 export async function signIn(

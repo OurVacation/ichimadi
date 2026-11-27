@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { Animal, Phrase, Profile, Stamp } from '../core/types.ts'
-import { koreanNameCandidates } from '../core/names.ts'
+import type { Animal, NameCandidate, NameGenerator, Phrase, Profile, Stamp } from '../core/types.ts'
+import { hangulName } from '../core/names.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
 import { PHRASES } from '../data/phrases.ts'
@@ -91,104 +91,140 @@ export function Login({
   )
 }
 
-export function AnimalPick({ onPick }: { onPick: (a: Animal) => Result }) {
-  const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
-  async function pick(a: Animal) {
-    setBusy(true)
-    const ok = await onPick(a)
-    setBusy(false)
-    setFailed(!ok)
-  }
-  return (
-    <main className="page stack">
-      <h2>{JA.animal.title}</h2>
-      <p className="muted">{JA.animal.lead}</p>
-      <div className="animal-grid">
-        {ANIMALS.map((a) => (
-          <button key={a.id} className="animal" type="button" disabled={busy} onClick={() => pick(a.id)}>
-            <span className="animal-emoji" aria-hidden="true">
-              {a.emoji}
-            </span>
-            <span>{JA.animal[a.id]}</span>
-          </button>
-        ))}
-      </div>
-      {failed && (
-        <p className="error" role="alert">
-          {JA.error}
-        </p>
-      )}
-    </main>
-  )
-}
+/** 입력을 멈추고 이만큼 지나면 이름을 요청한다 */
+const NAME_DEBOUNCE_MS = 500
 
-export function NamePick({
-  animal,
+type Names =
+  | { kind: 'empty' }
+  | { kind: 'waiting' }
+  | { kind: 'ready'; candidates: NameCandidate[] }
+  | { kind: 'failed' }
+
+/** 처음 설정: 위에 이름, 아래에 동물. 이름을 기다리는 동안 동물을 고를 수 있다. 결정은 둘 다 정한 뒤 한 번 */
+export function Setup({
+  generateNames,
   onConfirm,
-  onBack,
 }: {
-  animal: Animal | null
-  onConfirm: (name: string) => Result
-  onBack: () => void
+  generateNames: NameGenerator
+  onConfirm: (profile: { animal: Animal; koreanName: string }) => Result
 }) {
   const [input, setInput] = useState('')
+  const [attempt, setAttempt] = useState(0)
+  const [names, setNames] = useState<Names>({ kind: 'empty' })
   const [picked, setPicked] = useState<string | null>(null)
+  const [animal, setAnimal] = useState<Animal | null>(null)
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
-  const candidates = koreanNameCandidates(input)
-  const chosen = picked && candidates.includes(picked) ? picked : null
+
+  useEffect(() => {
+    const fullName = input.trim()
+    if (!fullName) {
+      setNames({ kind: 'empty' })
+      return
+    }
+    const asIs = hangulName(fullName)
+    if (asIs) {
+      setNames({ kind: 'ready', candidates: [{ name: asIs, note: JA.name.noteAsIs }] })
+      return
+    }
+    // 입력이 바뀌면 앞 요청의 답은 버린다
+    let live = true
+    setNames({ kind: 'waiting' })
+    const timer = setTimeout(() => {
+      generateNames(fullName).then(
+        (candidates) => live && setNames({ kind: 'ready', candidates }),
+        () => live && setNames({ kind: 'failed' }),
+      )
+    }, NAME_DEBOUNCE_MS)
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
+  }, [input, attempt, generateNames])
+
+  const candidates = names.kind === 'ready' ? names.candidates : []
+  const koreanName = candidates.some((c) => c.name === picked) ? picked : null
 
   async function confirm() {
-    if (!chosen) return
+    if (!animal || koreanName === null) return
     setBusy(true)
-    const ok = await onConfirm(chosen)
+    const ok = await onConfirm({ animal, koreanName })
     setBusy(false)
     setFailed(!ok)
   }
 
   return (
     <main className="page stack">
-      <button className="link back" type="button" onClick={onBack}>
-        ← {JA.name.back}
-      </button>
-      <h2>{JA.name.title}</h2>
-      <label className="field">
-        <span>{JA.name.lead}</span>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={JA.name.placeholder}
-          aria-label={JA.name.label}
-          maxLength={10}
-          autoComplete="off"
-          lang="ja"
-        />
-      </label>
-      {input.trim() && candidates.length === 0 && <p className="muted">{JA.name.unreadable}</p>}
-      {candidates.length > 0 && (
-        <div className="stack-sm">
-          <p className="label">{JA.name.candidates}</p>
-          <div className="candidates">
-            {candidates.map((c) => (
-              <button
-                key={c}
-                type="button"
-                lang="ko"
-                className={`candidate${c === chosen ? ' is-picked' : ''}`}
-                aria-pressed={c === chosen}
-                onClick={() => setPicked(c)}
-              >
-                {c}
+      <h2>{JA.setup.title}</h2>
+      <p className="muted">{JA.setup.lead}</p>
+      <section className="stack-sm">
+        <label className="field">
+          <span>{JA.name.lead}</span>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={JA.name.placeholder}
+            aria-label={JA.name.label}
+            maxLength={20}
+            autoComplete="off"
+            lang="ja"
+          />
+        </label>
+        <div className="names" aria-live="polite">
+          {names.kind === 'waiting' && <p className="muted waiting">{JA.name.waiting}</p>}
+          {names.kind === 'failed' && (
+            <p className="error">
+              {JA.name.failed}{' '}
+              <button className="link" type="button" onClick={() => setAttempt((n) => n + 1)}>
+                {JA.name.retry}
               </button>
-            ))}
-          </div>
+            </p>
+          )}
+          {names.kind === 'ready' && candidates.length === 0 && <p className="error">{JA.name.unreadable}</p>}
+          {candidates.length > 0 && (
+            <>
+              <p className="label">{JA.name.candidates}</p>
+              <div className="candidates">
+                {candidates.map((c) => (
+                  <button
+                    key={c.name}
+                    type="button"
+                    className={`candidate${c.name === koreanName ? ' is-picked' : ''}`}
+                    aria-pressed={c.name === koreanName}
+                    onClick={() => setPicked(c.name)}
+                  >
+                    <b lang="ko">{c.name}</b>
+                    {c.note && <small>{c.note}</small>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
-      )}
-      {chosen && (
+      </section>
+      <section className="stack-sm">
+        <p className="label">{JA.animal.title}</p>
+        <div className="animal-grid">
+          {ANIMALS.map((a) => (
+            <button
+              key={a.id}
+              className={`animal${a.id === animal ? ' is-picked' : ''}`}
+              type="button"
+              aria-pressed={a.id === animal}
+              onClick={() => setAnimal(a.id)}
+            >
+              <span className="animal-emoji" aria-hidden="true">
+                {a.emoji}
+              </span>
+              <span>{JA.animal[a.id]}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+      {animal && (
         <div className="preview">
-          <p className="label">{JA.name.preview}</p>
-          <Seal animal={animal} name={chosen} size="big" />
+          <p className="label">{JA.setup.preview}</p>
+          <Seal animal={animal} name={koreanName} size="big" />
         </div>
       )}
       {failed && (
@@ -196,8 +232,8 @@ export function NamePick({
           {JA.error}
         </p>
       )}
-      <button className="btn" type="button" disabled={!chosen || busy} onClick={confirm}>
-        {JA.name.confirm}
+      <button className="btn btn-bottom" type="button" disabled={!animal || koreanName === null || busy} onClick={confirm}>
+        {JA.setup.confirm}
       </button>
     </main>
   )
