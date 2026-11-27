@@ -2,41 +2,42 @@
 
 ## 기술 스택
 
-- 백엔드: FastAPI (Python 3.13), Docker Compose
+- 백엔드: Python 3.12, FastAPI, PostgreSQL 16, SQLAlchemy, Alembic, uv
 - 프론트엔드: 미정
-- AI: 외부 API 호출 방식 검토 중 (제공자 미정)
+- 로컬 개발: Docker Compose
 
 ## 프로젝트 구조
 
 ```
 ichimadi/
-├── frontend/             # 프론트엔드 (미정)
-├── backend/
-│   ├── app/
-│   │   ├── main.py       # FastAPI 진입점
-│   │   ├── api/          # 라우터
-│   │   ├── core/         # 설정
-│   │   └── services/     # 비즈니스 로직, 외부 API 연동
-│   ├── tests/
-│   └── Dockerfile
-└── docker-compose.yml
+├── backend/              # FastAPI (규칙: backend/CLAUDE.md)
+├── frontend/             # 모바일 웹 (규칙: frontend/CLAUDE.md)
+├── docs/api/openapi.json # API 계약
+└── docker-compose.yml    # 로컬 개발: db + api
 ```
 
 ## 실행
 
 ```bash
-docker compose up --build
+docker compose up -d --build db api
+docker compose run --rm api alembic upgrade head
 ```
 
-- 상태 확인: http://localhost:8000/health
-- API 문서: http://localhost:8000/docs
+- 상태 확인: http://localhost:8000/api/health
+- API 문서: http://localhost:8000/api/docs
 
-환경 변수를 바꾸려면 `backend/.env.example`을 `backend/.env`로 복사해서 수정합니다.
-API 키는 `backend/.env`에만 넣고 커밋하지 않습니다.
+환경 변수를 바꾸려면 `backend/.env.example`을 `backend/.env`로 복사해서 수정합니다. `.env`는 커밋하지 않습니다.
 
-## 테스트
+## 테스트와 린트
 
 ```bash
-docker compose run --rm --build -v ./backend:/src -w /src --user root backend \
-  sh -c "pip install -r requirements-dev.txt && pytest -p no:cacheprovider"
+docker compose run --rm api pytest
+docker compose run --rm api ruff check .
+docker compose run --rm api ruff format .
+```
+
+## API 계약 갱신
+
+```bash
+docker compose run --rm api python -m scripts.export_openapi
 ```

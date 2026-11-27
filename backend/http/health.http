@@ -1,0 +1,2 @@
+### 서버 상태 확인
+GET http://localhost:8000/api/health
