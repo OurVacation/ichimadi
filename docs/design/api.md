@@ -50,13 +50,17 @@
 ```
 `animal`: `"tiger" | "rabbit" | "magpie" | "bear" | null`, `korean_name`: string | null.
 
+`korean_name`: `null` = 아직 안 정함, `""` = 이름을 패스함(동물만 있는 도장), 그 밖 = 고른 한글 이름. FE는 `animal`과 `korean_name`이 둘 다 null이 아니면 한마디판, 아니면 설정 화면으로 간다.
+
 ## 3. `PUT /api/me/profile`: 동물·한국식 이름 저장
 
 요청 (전체 덮어쓰기, 두 키 모두 필수)
 ```json
 { "animal": "tiger", "korean_name": "양자" }
 ```
-`korean_name`은 null 또는 `^[가-힣]{1,10}$` (앞뒤 공백은 서버가 지움).
+`korean_name`은 null, `""`(이름 패스), 또는 `^[가-힣]{1,10}$` (앞뒤 공백은 서버가 지움. 공백만 있으면 `""`로 본다).
+
+이름 패스 예: `{ "animal": "tiger", "korean_name": "" }`
 
 응답 200: `GET /api/me`와 같은 모양.
 
@@ -124,6 +128,7 @@
     {
       "id": "q1",
       "set_code": "hackathon",
+      "label": "はじめまして",
       "ko": "어떤 앱인가요?",
       "kana": "オットン エビンガヨ?",
       "ja": "どんなアプリですか？",
@@ -147,36 +152,42 @@
 
 ## 8. `POST /api/names/suggest`: 한국식 이름 후보 (LLM)
 
+FE의 `NameGenerator = (fullName) => Promise<NameCandidate[]>`(`frontend/src/core/types.ts`)를 그대로 서버로 옮긴 모양이다.
+
 요청
 ```json
-{ "ja_name": "陽子" }
+{ "ja_name": "田中 陽子" }
 ```
 
 | 필드 | 규칙 |
 |---|---|
-| `ja_name` | 1~20자. 서버가 NFKC → trim 한 뒤 공백으로 나눈 마지막 단어를 쓴다(FE `names.ts`와 같은 기준) |
+| `ja_name` | 일본 이름 **전체(성+이름)**. 서버가 NFKC → trim → 연속 공백을 하나로 바꾼 뒤 1~30자여야 한다. 이름만 넣어도 된다 |
 
-응답 200
+응답 200 (`name`, `note`는 FE `NameCandidate {name, note?}`와 같은 이름)
 ```json
 {
   "candidates": [
-    { "hangul": "양자", "kana": "ヤンジャ", "meaning_ja": "「陽子」の韓国語読み" },
-    { "hangul": "요코", "kana": "ヨコ", "meaning_ja": "音をそのまま韓国語に" },
-    { "hangul": "서연", "kana": "ソヨン", "meaning_ja": "明るい響きの人気の名前" }
+    { "name": "전양자", "note": "「田」と「陽子」の韓国語読み" },
+    { "name": "전요코", "note": "「田」を韓国の姓に、名前は音のまま" },
+    { "name": "전서연", "note": "「陽子」の明るい印象に近い韓国の名前" }
   ]
 }
 ```
 
-- `candidates`는 항상 3개다. `hangul`은 `^[가-힣]{1,10}$`, 서로 다르다.
+- `candidates`는 항상 3개다. `name`은 `^[가-힣]{1,10}$`, 서로 다르다. `note`는 왜 이 이름인지(일본어, 1~40자).
+- 짓는 규칙: **성에서 한 글자를 골라 한국 성처럼 + 이름을 한국 이름처럼**. 성이 없으면 이름만 한국식으로. 자세한 프롬프트 규칙은 [구성 계획](backend-architecture.md) §6.
 - 같은 `ja_name`(정규화 기준)이면 같은 후보가 나온다(서버 캐시).
 - 서버는 LLM을 최대 `NAME_SUGGEST_TIMEOUT_SECONDS`(기본 2.5초) 기다린다.
+- 한글로 넣은 이름은 FE가 서버를 부르지 않고 그대로 쓴다(`hangulName()`). 서버는 따로 처리하지 않는다.
 
 | status | code | message_ja | FE 동작 |
 |---|---|---|---|
 | 422 | `invalid_ja_name` | 名前を確認してください | 입력 안내 |
-| 503 | `name_suggest_unavailable` | いまは候補を作れません | **FE `names.ts` 규칙으로 후보를 보여 준다** |
+| 503 | `name_suggest_unavailable` | いまは候補を作れません | **임시 규칙(`temporaryNameGenerator`)으로 후보를 보여 준다** |
 
-FE는 자기 쪽에서도 3초 시간 제한을 두고, 시간을 넘기거나 네트워크 오류가 나도 `names.ts`로 대비한다. 고른 이름은 기존대로 `PUT /api/me/profile`로 저장한다.
+FE는 서버 구현을 `NameGenerator`로 감싸 `main.tsx`에서 바꿔 끼운다. 503·3초 초과·네트워크 오류면 같은 자리에서 `temporaryNameGenerator`로 대비한다. 고른 이름은 기존대로 `PUT /api/me/profile`로 저장한다.
+
+FE 설정 화면은 입력이 멈추고 500ms 뒤에 이름 짓기를 부른다(디바운스). 그래서 입력 중간값(`田中`, `田中 陽`)으로도 요청이 갈 수 있다. 서버는 인증·캐시·30자 제한으로 감당한다.
 
 ## 9. 공통 401
 
@@ -194,5 +205,7 @@ FE는 자기 쪽에서도 3초 시간 제한을 두고, 시간을 넘기거나 �
 | 로그인 응답 | `expires_in` 추가 | 선택적으로 사용 |
 | 토큰 12시간 이상 | 72시간 | 행사 기간 전체 |
 | 한마디 문장 API 필요 없음 | `GET /api/phrase-sets`, `GET /api/phrases` 추가 | ADR-003 |
-| 이름 후보 API 필요 없음 | `POST /api/names/suggest` 추가 (LLM) | ADR-004 |
+| 이름 후보 API 필요 없음 | `POST /api/names/suggest` 추가 (LLM), 응답은 FE `NameCandidate {name, note}` 모양 | ADR-004 |
+| `korean_name` 한글 1~10자 | `""`(이름 패스)도 허용 | FE PR #2 |
+| 한마디 필드 | `label` 포함 | FE PR #2 |
 | `GET /api/stats` (P2) | 이번 범위 밖 | 승환 담당 |
