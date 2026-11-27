@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useReducer, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { NameGenerator, PhraseSource, Store } from '../core/types.ts'
 import type { LoginHash } from '../core/loginHash.ts'
 import { firstScreen } from '../core/session.ts'
+import { createEnterGate } from './enterGate.ts'
 import { reduce } from './flow.ts'
-import { Board, Book, Card, LoadFailed, Login, Opening, Partner, Setup, Stamped, type LoginNotice } from './screens.tsx'
+import { Board, Book, Card, LoadFailed, Loading, Login, Opening, Partner, Setup, Stamped, type LoginNotice } from './screens.tsx'
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
@@ -32,41 +33,52 @@ export function App({
   loadPhrases: PhraseSource
 }) {
   const [state, dispatch] = useReducer(reduce, null)
-  const [notice, setNotice] = useState<LoginNotice>(qrLogin.kind === 'login' ? 'checking' : qrLogin.kind === 'malformed' ? 'qrBroken' : 'none')
+  const [notice, setNotice] = useState<LoginNotice>(qrLogin.kind === 'malformed' ? 'qrBroken' : 'none')
   /** 로그인은 됐는데 한마디·내 정보를 못 받은 계정. 다시 시도 화면을 보인다 */
   const [failedLoad, setFailedLoad] = useState<string | null>(null)
+  /** 저장된 로그인을 되살리거나 QR로 로그인하는 중. 그동안 로그인 폼을 보이지 않는다 (다른 사람이 끼어들지 않게) */
+  const [restoring, setRestoring] = useState(() => qrLogin.kind === 'login' || (qrLogin.kind === 'none' && session.load() !== null))
+  const gate = useMemo(() => createEnterGate(() => session.load()), [session])
+  const handledQr = useRef<LoginHash | null>(null)
   const pouchOpened = useCallback(() => dispatch({ type: 'pouchOpened' }), [])
 
   const signOut = useCallback(() => {
+    gate.cancel()
     session.save(null)
     setFailedLoad(null)
+    setRestoring(false)
     dispatch({ type: 'signOut' })
-  }, [session])
+  }, [session, gate])
 
   useEffect(
     () =>
       session.onExpired?.(() => {
+        gate.cancel()
         setFailedLoad(null)
+        setRestoring(false)
         setNotice('expired')
         dispatch({ type: 'signOut' })
       }),
-    [session],
+    [session, gate],
   )
 
   /** 한마디판에 필요한 것(내 정보, 도장, 한마디)을 한 번에 받아 들어간다. 한마디는 이때만 받는다 */
   const enter = useCallback(
-    async (accountId: string, live: () => boolean = () => true) => {
+    async (accountId: string) => {
+      const current = gate.begin(accountId)
       try {
         const [profile, stamps, phrases] = await Promise.all([store.getProfile(accountId), store.getStamps(accountId), loadPhrases()])
-        if (!live()) return
+        if (!current()) return
         setFailedLoad(null)
         dispatch({ type: 'signedIn', accountId, profile, stamps, phrases, first: firstScreen(profile) })
       } catch {
-        // 로그인이 끊겨서(401) 실패했으면 로그인 화면이 맞다
-        if (live() && session.load() !== null) setFailedLoad(accountId)
+        // 로그인이 끊겨서(401) 실패했으면 current()가 false다. 로그인 화면이 맞다
+        if (current()) setFailedLoad(accountId)
+      } finally {
+        if (current()) setRestoring(false)
       }
     },
-    [store, session, loadPhrases],
+    [store, loadPhrases, gate],
   )
 
   const login = useCallback(
@@ -85,23 +97,23 @@ export function App({
   )
 
   useEffect(() => {
-    let live = true
+    // 같은 QR은 한 번만 쓴다 (StrictMode가 effect를 두 번 부른다)
+    if (handledQr.current === qrLogin) return
+    handledQr.current = qrLogin
     // QR 카드로 열었으면 저장된 로그인보다 카드가 먼저다. 깨진 QR이면 로그인 화면에 알림만 둔다
     if (qrLogin.kind === 'login') {
       login(qrLogin.id, qrLogin.password).then((r) => {
-        if (live) setNotice(r === 'ok' ? 'none' : r)
+        setNotice(r === 'ok' ? 'none' : r)
+        if (r !== 'ok') setRestoring(false)
       })
     } else if (qrLogin.kind === 'none') {
       const accountId = session.load()
-      if (accountId) enter(accountId, () => live)
-    }
-    return () => {
-      live = false
+      if (accountId) enter(accountId)
     }
   }, [session, qrLogin, login, enter])
 
   if (failedLoad) return <LoadFailed onRetry={() => enter(failedLoad)} onLogout={signOut} />
-  if (!state) return <Login onSubmit={login} notice={notice} />
+  if (!state) return restoring ? <Loading /> : <Login onSubmit={login} notice={notice} />
 
   const { accountId, profile, stamps, phrases, screen } = state
 

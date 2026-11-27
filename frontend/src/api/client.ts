@@ -33,7 +33,7 @@ export type ApiClient = {
   accountId(): string | null
   saveAuth(token: string, accountId: string): void
   clearAuth(): void
-  /** 토큰을 보낸 요청이 401이면 토큰을 지운 뒤 부른다. 돌려준 함수로 해제 */
+  /** 지금 토큰을 보낸 요청이 401이면 토큰을 지운 뒤 부른다. 돌려준 함수로 해제 */
   onUnauthorized(listener: () => void): () => void
 }
 
@@ -105,7 +105,8 @@ export function createApiClient({
         body = undefined
       }
       if (!res.ok) {
-        if (status === 401 && token) {
+        // 그 사이에 다른 사람이 로그인했으면 그 사람의 토큰은 그대로 둔다 (늦게 온 지난 요청의 401)
+        if (status === 401 && token && auth?.token === token) {
           clearAuth()
           for (const listener of listeners) listener()
         }

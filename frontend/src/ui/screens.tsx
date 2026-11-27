@@ -15,8 +15,8 @@ type Result = Promise<boolean>
 
 const stampOf = (stamps: Stamp[], phraseId: string) => stamps.find((s) => s.phraseId === phraseId)
 
-/** 로그인 화면 아래 알림. checking은 QR로 로그인하는 동안 */
-export type LoginNotice = 'none' | 'checking' | 'failed' | 'error' | 'qrBroken' | 'expired'
+/** 로그인 화면 아래 알림 */
+export type LoginNotice = 'none' | 'failed' | 'error' | 'qrBroken' | 'expired'
 const NOTICE_TEXT = { failed: JA.login.failed, error: JA.error, qrBroken: JA.login.qrBroken, expired: JA.login.expired }
 
 export function Login({
@@ -76,17 +76,12 @@ export function Login({
             required
           />
         </label>
-        {shown === 'checking' && (
-          <p className="muted" aria-live="polite">
-            {JA.login.busy}
-          </p>
-        )}
-        {shown !== 'none' && shown !== 'checking' && (
+        {shown !== 'none' && (
           <p className="error" role="alert">
             {NOTICE_TEXT[shown]}
           </p>
         )}
-        <button className="btn" type="submit" disabled={busy || shown === 'checking'}>
+        <button className="btn" type="submit" disabled={busy}>
           {busy ? JA.login.busy : JA.login.submit}
         </button>
       </form>
@@ -338,6 +333,18 @@ export function Opening({ onOpened }: { onOpened: () => void }) {
       <Pouch className="pouch-big opening" />
       <p className="muted" aria-live="polite">
         {JA.opening.label}
+      </p>
+    </main>
+  )
+}
+
+/** 저장된 로그인을 되살리거나 QR로 로그인하는 동안. 로그인 폼 대신 보인다 */
+export function Loading() {
+  return (
+    <main className="page center">
+      <h1 className="brand">{JA.appName}</h1>
+      <p className="muted" aria-live="polite">
+        {JA.load.busy}
       </p>
     </main>
   )

@@ -218,3 +218,26 @@ test('망가진 저장 토큰은 로그인 안 한 것으로 본다', () => {
     assert.equal(createApiClient({ fetch: server().fetch, storage }).accountId(), null, raw)
   }
 })
+
+test('늦게 온 지난 계정 요청의 401은 그 사이에 로그인한 다른 계정을 로그아웃시키지 않는다', async () => {
+  let release: () => void = () => {}
+  const late = new Promise<void>((r) => (release = r))
+  const fetch = (async (_input: string | URL | Request, init: RequestInit = {}) => {
+    const auth = (init.headers as Record<string, string>).Authorization
+    if (auth === 'Bearer tok-a') {
+      await late
+      return new Response(JSON.stringify({ code: 'unauthorized', message_ja: 'ログインが必要です。' }), { status: 401 })
+    }
+    return new Response(JSON.stringify({ stamps: [], progress: [] }), { status: 200 })
+  }) as typeof globalThis.fetch
+  const client = createApiClient({ fetch, storage: memoryStorage() })
+  let notified = 0
+  client.onUnauthorized(() => notified++)
+  client.saveAuth('tok-a', 'a01')
+  const stale = client.request('GET', '/me/stamps', { parse: anything })
+  client.saveAuth('tok-b', 'b01')
+  release()
+  assert.equal((await rejection(stale)).status, 401)
+  assert.equal(client.accountId(), 'b01')
+  assert.equal(notified, 0)
+})
