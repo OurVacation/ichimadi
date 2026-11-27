@@ -133,7 +133,8 @@ ol {
 /* buttons */
 .btn {
   min-height: 52px;
-  border: 0;
+  /* 테두리 있는 버튼(btn-outline)과 높이가 같게 늘 2px 테두리 자리를 둔다 */
+  border: 2px solid transparent;
   border-radius: 14px;
   padding: 12px 18px;
   background: var(--red);
