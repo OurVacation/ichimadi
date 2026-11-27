@@ -5,7 +5,8 @@ import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
 import { PHRASES } from '../data/phrases.ts'
 import { JA, PARTNER } from '../i18n.ts'
-import { ANIMALS, Pouch, Seal } from './parts.tsx'
+import { Pouch } from './parts.tsx'
+import { ANIMALS, Seal } from './stamps.tsx'
 
 /** 저장 결과. 실패하면 화면이 다시 누르게 한다. */
 type Result = Promise<boolean>
@@ -220,16 +221,14 @@ export function Setup({
         <div className="animal-grid">
           {ANIMALS.map((a) => (
             <button
-              key={a.id}
-              className={`animal${a.id === animal ? ' is-picked' : ''}`}
+              key={a}
+              className={`animal${a === animal ? ' is-picked' : ''}`}
               type="button"
-              aria-pressed={a.id === animal}
-              onClick={() => setAnimal(a.id)}
+              aria-pressed={a === animal}
+              onClick={() => setAnimal(a)}
             >
-              <span className="animal-emoji" aria-hidden="true">
-                {a.emoji}
-              </span>
-              <span>{JA.animal[a.id]}</span>
+              <Seal animal={a} name={null} decorative />
+              <span>{JA.animal[a]}</span>
             </button>
           ))}
         </div>
