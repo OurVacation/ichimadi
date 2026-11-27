@@ -14,17 +14,15 @@ test('체험 계정 설정 문자열을 읽는다: 형식이 틀린 것과 겹�
   assert.deepEqual(parseTrialAccounts(undefined), [])
 })
 
-test('동물이나 이름 중 하나라도 없으면 설정 화면 (이름과 동물을 한 화면에서)', () => {
+test('동물이 없으면 설정 화면 (이름과 동물을 한 화면에서 같이 저장)', () => {
   assert.equal(firstScreen({ animal: null, koreanName: null }), 'setup')
-  assert.equal(firstScreen({ animal: 'bear', koreanName: null }), 'setup')
   assert.equal(firstScreen({ animal: null, koreanName: '양자' }), 'setup')
 })
-test('둘 다 있으면 바로 한마디판', () => {
+test('동물과 이름이 있으면 바로 한마디판', () => {
   assert.equal(firstScreen({ animal: 'bear', koreanName: '양자' }), 'board')
 })
-test('이름을 패스하면(빈 이름) 동물만으로 한마디판', () => {
-  assert.equal(firstScreen({ animal: 'bear', koreanName: '' }), 'board')
-  assert.equal(firstScreen({ animal: null, koreanName: '' }), 'setup')
+test('이름을 패스하면(이름 null) 동물만으로 한마디판', () => {
+  assert.equal(firstScreen({ animal: 'bear', koreanName: null }), 'board')
 })
 
 test('로그인: 틀리면 거절, 맞으면 처음 화면, 설정 뒤 다시 로그인하면 바로 한마디판', async () => {
@@ -37,7 +35,7 @@ test('로그인: 틀리면 거절, 맞으면 처음 화면, 설정 뒤 다시 �
 
 test('이름을 패스한 설정도 저장되고, 다시 로그인하면 바로 한마디판', async () => {
   const store = createLocalStore(memoryStorage(), [{ id: 'judge01', password: '1111' }])
-  await store.saveProfile('judge01', { animal: 'rabbit', koreanName: '' })
-  assert.deepEqual(await store.getProfile('judge01'), { animal: 'rabbit', koreanName: '' })
+  await store.saveProfile('judge01', { animal: 'rabbit', koreanName: null })
+  assert.deepEqual(await store.getProfile('judge01'), { animal: 'rabbit', koreanName: null })
   assert.deepEqual(await signIn(store, 'judge01', '1111'), { accountId: 'judge01', screen: 'board' })
 })

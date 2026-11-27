@@ -107,14 +107,14 @@ export function Setup({
   onConfirm,
 }: {
   generateNames: NameGenerator
-  onConfirm: (profile: { animal: Animal; koreanName: string }) => Result
+  onConfirm: (profile: { animal: Animal; koreanName: string | null }) => Result
 }) {
   const [input, setInput] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [names, setNames] = useState<Names>({ kind: 'empty' })
   const [picked, setPicked] = useState<string | null>(null)
   const [animal, setAnimal] = useState<Animal | null>(null)
-  /** 이름을 패스하면 동물만 있는 도장. 빈 이름('')으로 저장한다 */
+  /** 이름을 패스하면 동물만 있는 도장. 이름은 null로 저장한다 (서버 규칙: 한글 1~10자 또는 null) */
   const [passName, setPassName] = useState(false)
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -147,10 +147,11 @@ export function Setup({
 
   const candidates = names.kind === 'ready' ? names.candidates : []
   const chosen = candidates.some((c) => c.name === picked) ? picked : null
-  const koreanName = passName ? '' : chosen
+  const koreanName = passName ? null : chosen
+  const ready = animal !== null && (passName || chosen !== null)
 
   async function confirm() {
-    if (!animal || koreanName === null) return
+    if (!animal || !ready) return
     setBusy(true)
     const ok = await onConfirm({ animal, koreanName })
     setBusy(false)
@@ -247,7 +248,7 @@ export function Setup({
       <button
         className="btn btn-bottom"
         type="button"
-        disabled={!animal || koreanName === null || busy}
+        disabled={!ready || busy}
         onClick={confirm}
       >
         {JA.setup.confirm}
