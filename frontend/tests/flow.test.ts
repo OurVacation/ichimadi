@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import type { Phrase, Stamp } from '../src/core/types.ts'
 import { placePins } from '../src/data/boardMap.ts'
-import { reduce, type State } from '../src/ui/flow.ts'
+import { isDeep, reduce, type State } from '../src/ui/flow.ts'
 
 const phrase = (id: string): Phrase => ({
   id,
@@ -111,4 +111,27 @@ test('한 번 열어 본 복주머니와 도장 받은 복주머니는 흔들림
   assert.deepEqual(reduce(s, { type: 'openPouch', phrase: phrases[2], instant: false })?.screen, { kind: 'card', phrase: phrases[2] })
   // 다시 로그인(새로고침)하면 열어 본 기록은 없다
   assert.deepEqual(signedIn(phrases)?.opened, [])
+})
+
+test('뒤로 가기: 카드→판, 상대방→카드, 도장·도장첩→판. 한마디판·설정에서는 그대로 (브라우저 기본)', () => {
+  const phrases = [phrase('q1')]
+  const board = signedIn(phrases)
+  const card = reduce(board, { type: 'openPouch', phrase: phrases[0], instant: true })
+  const partner = reduce(card, { type: 'said' })
+  const stamped = reduce(partner, { type: 'stamped', at: '2026-11-29T09:00:00Z' })
+  const book = reduce(board, { type: 'toBook' })
+  const opening = reduce(board, { type: 'openPouch', phrase: phrases[0], instant: false })
+  const back = (s: State) => reduce(s, { type: 'back' })?.screen
+  assert.deepEqual(back(card), { kind: 'board' })
+  assert.deepEqual(back(partner), { kind: 'card', phrase: phrases[0] })
+  assert.deepEqual(back(stamped), { kind: 'board' })
+  assert.deepEqual(back(book), { kind: 'board' })
+  assert.deepEqual(back(opening), { kind: 'board' })
+  assert.equal(reduce(board, { type: 'back' }), board)
+  const setup = reduce(null, { type: 'signedIn', accountId: 'j01', profile: { animal: null, koreanName: null }, stamps: [], phrases, first: 'setup' })
+  assert.equal(reduce(setup, { type: 'back' }), setup)
+  assert.deepEqual(
+    [board, setup, card, partner, stamped, book, opening].map((s) => isDeep(s!.screen)),
+    [false, false, true, true, true, true, true],
+  )
 })

@@ -6,7 +6,7 @@ import type { LoginHash } from '../core/loginHash.ts'
 import { JA } from '../i18n.ts'
 import { firstScreen } from '../core/session.ts'
 import { createEnterGate } from './enterGate.ts'
-import { reduce } from './flow.ts'
+import { isDeep, reduce } from './flow.ts'
 import { Board, Book, Card, LoadFailed, Loading, Login, Opening, Partner, Setup, Stamped } from './screens.tsx'
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -48,6 +48,37 @@ export function App({
   const gate = useMemo(() => createEnterGate(() => session.load()), [session])
   const handledQr = useRef<LoginHash | null>(null)
   const pouchOpened = useCallback(() => dispatch({ type: 'pouchOpened' }), [])
+  /** 깊은 화면용으로 쌓은 브라우저 기록이 있는가, 앱이 스스로 되돌린 뒤로 가기인가 */
+  const pushed = useRef(false)
+  const ignorePop = useRef(false)
+
+  // 한마디판보다 깊은 화면에 있는 동안 브라우저 기록을 하나 쌓아 둔다. 앱 안 버튼으로 나오면 그 기록을 되돌린다
+  const deep = state !== null && isDeep(state.screen)
+  useEffect(() => {
+    if (deep && !pushed.current) {
+      history.pushState({ ichimadi: 'deep' }, '')
+      pushed.current = true
+    } else if (!deep && pushed.current) {
+      pushed.current = false
+      ignorePop.current = true
+      history.back()
+    }
+  }, [deep, state?.screen])
+
+  useEffect(() => {
+    const onPop = () => {
+      if (ignorePop.current) {
+        ignorePop.current = false
+        return
+      }
+      if (!pushed.current) return
+      // 뒤로 가기가 쌓아 둔 기록을 썼다. 한 단계 돌아가고, 아직 깊으면 위 effect가 다시 쌓는다
+      pushed.current = false
+      dispatch({ type: 'back' })
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   useEffect(
     () =>

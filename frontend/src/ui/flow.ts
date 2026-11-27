@@ -48,6 +48,26 @@ export type Event =
   | { type: 'closeBook' }
   | { type: 'openBook' }
   | { type: 'signOut' }
+  /** 브라우저 뒤로 가기 (안드로이드 뒤로 버튼, iOS 스와이프) */
+  | { type: 'back' }
+
+/** 한마디판보다 깊은 화면. 들어갈 때 브라우저 기록을 하나 쌓아 뒤로 가기가 앱 밖으로 나가지 않게 한다 */
+export const isDeep = (screen: Screen) => screen.kind !== 'setup' && screen.kind !== 'board'
+
+/** 뒤로 가기로 한 단계 돌아갈 화면. 카드→판, 상대방→카드, 도장·도장첩→판 */
+function backFrom(s: Screen): Screen {
+  switch (s.kind) {
+    case 'partner':
+      return { kind: 'card', phrase: s.phrase }
+    case 'opening':
+    case 'card':
+    case 'stamped':
+    case 'book':
+      return { kind: 'board' }
+    default:
+      return s
+  }
+}
 
 /** 지금 화면에서 받을 수 없는 이벤트는 무시하고 같은 상태를 돌려준다. */
 export function reduce(state: State, e: Event): State {
@@ -97,5 +117,7 @@ export function reduce(state: State, e: Event): State {
       return s.kind === 'book' && bookProgress(state.stamps, state.phrases).complete ? go({ kind: 'book', closed: true }) : state
     case 'openBook':
       return s.kind === 'book' ? go({ kind: 'book', closed: false }) : state
+    case 'back':
+      return isDeep(s) ? go(backFrom(s)) : state
   }
 }
