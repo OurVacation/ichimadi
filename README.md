@@ -76,8 +76,9 @@ docker compose run --rm api python -m scripts.reset --names
 빈 이름·공백뿐인 이름·정규화 후 30자를 넘는 이름은 모두 422 `invalid_ja_name`입니다.
 기본 모델은 [공식 모델 문서](https://aistudio.google.com/docs/models/gemini-3.8-flash)에서 확인한
 `gemini-3.8-flash`이며 `GEMINI_MODEL`로 바꿀 수 있습니다.
-`NAME_SUGGEST_TIMEOUT_SECONDS=2.5`를 SDK의 밀리초 단위 HTTP 타임아웃으로 변환하고 재시도를 끕니다
-([SDK 문서](https://googleapis.github.io/python-genai/)). 테스트는 실제 Gemini를 호출하지 않습니다.
+`NAME_SUGGEST_TIMEOUT_SECONDS`(기본 10)를 SDK의 밀리초 단위 HTTP 타임아웃으로 변환하고 재시도를 끕니다
+([SDK 문서](https://googleapis.github.io/python-genai/)). Gemini API가 10초 미만의 마감 시간을 거부하므로 10초보다 작게 줘도 10초로 올립니다.
+thinking 정도는 `GEMINI_THINKING_LEVEL`(기본 `low`)로 정합니다. 테스트는 실제 Gemini를 호출하지 않습니다.
 
 DB 테스트는 별도 `ichimadi_test` DB를 자동 생성·마이그레이션하고 테스트마다 트랜잭션을 롤백합니다.
 `TEST_DATABASE_URL`로 바꿀 수 있으며, 실수로 애플리케이션 DB를 사용하지 않도록 DB 이름이 `_test`로 끝나야 합니다.

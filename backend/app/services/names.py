@@ -17,6 +17,8 @@ def suggest(db: Session, generator: NameGenerator, raw_ja_name: str) -> list[Can
     cached = db.get(NameSuggestion, input_key)
     if cached is not None:
         return [Candidate.model_validate(item) for item in cached.candidates]
+    # LLM 호출(최대 10초) 동안 DB 연결을 붙잡지 않도록 읽기 트랜잭션을 끝내고 연결을 풀에 돌려준다.
+    db.commit()
     try:
         generated = generator.generate(input_key)
         candidates = []

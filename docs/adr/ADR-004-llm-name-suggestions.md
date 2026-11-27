@@ -30,7 +30,7 @@ type NameGenerator = (fullName: string) => Promise<NameCandidate[]>   // 성+이
 2. 짓는 규칙: 성에서 한 글자를 골라 한국 성처럼(가능하면 실제 있는 한국 성), 이름은 한국 이름처럼. 후보 3개는 서로 다른 방식(한자음 / 소리 / 뜻·인상)으로. 성이 없으면 이름만으로. 자세한 내용은 구성 계획 §6.
 3. LLM은 Gemini Flash 계열, SDK는 `google-genai`(새 의존성, 승인됨). 모델 이름은 `GEMINI_MODEL` 설정값.
 4. JSON 스키마 출력을 쓰고, 서버가 결과를 **엄격히 검증**한다: `name` `^[가-힣]{1,10}$`, 서로 다름, 정확히 3개, `note` 1~40자. 어기면 저장하지 않고 503.
-5. 서버 시간 제한 2.5초. 시간 초과·오류·키 없음·검증 실패는 모두 503 `name_suggest_unavailable`.
+5. 서버 시간 제한 ~~2.5초~~ **10초**(아래 변경 이력 참고). 시간 초과·오류·키 없음·검증 실패는 모두 503 `name_suggest_unavailable`.
 6. **대비 경로는 FE**: 서버를 부르는 `NameGenerator` 구현이 503·3초 초과·네트워크 오류일 때 `temporaryNameGenerator`로 대신한다. 설정 화면 코드는 바뀌지 않는다.
 7. 정규화한 입력(NFKC → trim → 연속 공백 하나로)을 키로 `name_suggestions`에 결과를 캐시한다. 같은 이름은 같은 후보가 나오고, 두 번째부터 LLM을 부르지 않는다.
 8. 일본어 이름과 LLM 응답 원문은 로그에 남기지 않는다. 캐시는 `reset.py --names`로 비울 수 있다.
@@ -59,3 +59,10 @@ type NameGenerator = (fullName: string) => Promise<NameCandidate[]>   // 성+이
 - 개인 정보: 사용자의 일본어 이름(심사위원 실명일 수 있음, 성 포함)이 Google로 전송된다. 팀이 알고 동의해야 하며, 필요하면 설정 화면에 일본어 안내를 넣는 것을 FE에 제안한다.
 - 비결정성: 같은 입력이라도 처음 생성 결과는 모델에 따라 다르다. 캐시가 이후 결과를 고정한다.
 - 배포: `GEMINI_API_KEY`, `GEMINI_MODEL`을 `compose.prod.yml` env에 넣도록 현우 님께 제안한다. 키가 없어도 앱은 대비 경로로 돈다.
+
+## 변경 이력
+
+- 2026-11-27 (현우, 태원 리뷰 대기): 배포 후 이름 추천이 항상 503이던 문제를 고치면서 다음을 바꿨다.
+  - 생성 호출의 `response_schema`는 예시(`examples`) 없는 별도 모델을 쓴다. `Candidate`의 Swagger 예시를 google-genai가 SDK Schema로 바꾸지 못해 요청 전에 `ValidationError`가 났다. API 문서용 `Candidate` 예시는 그대로 둔다.
+  - 시간 제한은 10초다. Gemini API가 10초 미만의 마감 시간을 `400 INVALID_ARGUMENT`로 거부한다. FE는 그대로 3초 뒤 `temporaryNameGenerator`로 대신하고, 서버는 늦게라도 성공하면 캐시에 남긴다.
+  - thinking 정도를 `GEMINI_THINKING_LEVEL`(기본 `low`)로 정한다. 실측(무료 등급, 3개 입력 × 3회): `gemini-3.5-flash-lite` + `minimal`이 9/9 성공, 0.98~1.26초.
