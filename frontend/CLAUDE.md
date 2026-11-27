@@ -6,7 +6,7 @@
 
 - 프레임워크: React 19 + TypeScript, Vite 6
 - 테스트: Node 내장 `node --test` (Node 23.6 이상, `.ts`를 그대로 실행)
-- 배포: 정적 빌드 → Vercel 또는 Cloudflare Pages
+- 배포: 정적 빌드를 Caddy 이미지에 넣어 GCP VM에서 서빙한다 (`deploy/web.Dockerfile`, [docs/INFRA.md](../docs/INFRA.md)). `/api`는 같은 주소에서 Caddy가 백엔드로 넘기므로 API 주소 설정이나 CORS가 필요 없다
 - API 타입: `docs/api/openapi.json`에서 `openapi-typescript`로 생성한 `src/api/schema.d.ts`
 
 ## 반드시 지킬 것

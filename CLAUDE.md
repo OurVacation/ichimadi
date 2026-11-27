@@ -11,10 +11,13 @@ KOREC 해커톤 출품작. **코드 프리즈: 2026-11-29(일) 17:00.** 그 뒤�
 ├─ docker-compose.yml   ← 로컬 개발: db + api
 ├─ compose.prod.yml     ← 배포: caddy + api + db (현우 담당)
 ├─ Caddyfile            ← HTTPS, /api/* → api:8000
+├─ deploy/              ← 배포 스크립트, web 이미지 Dockerfile, 서버 .env 예시 (현우 담당)
+├─ .github/workflows/   ← CI(ci.yml), CD(cd.yml) (현우 담당)
 ├─ content/phrases.json ← 한마디 콘텐츠의 유일한 원본 (FE 번들과 DB 시드가 같이 씀)
 ├─ docs/
 │  ├─ api/openapi.json  ← API 계약. BE가 생성하고 커밋, FE가 타입을 생성
 │  ├─ adr/              ← 설계 결정 기록 (ADR-001 …)
+│  ├─ INFRA.md          ← 배포·서버·계정 발급·백업 설명
 │  └─ meetings/         ← 회의록
 ├─ backend/             ← FastAPI (태원). 규칙은 backend/CLAUDE.md
 └─ frontend/            ← 모바일 웹 (준혁). 규칙은 frontend/CLAUDE.md
@@ -26,7 +29,7 @@ KOREC 해커톤 출품작. **코드 프리즈: 2026-11-29(일) 17:00.** 그 뒤�
 |---|---|---|
 | `backend/`, `docs/api/`, `docs/adr/` | 태원 | – |
 | `frontend/` | 준혁 (UI 다듬기: 태영) | BE 작업 중에는 수정하지 않는다 |
-| `compose.prod.yml`, `Caddyfile`, 배포 | 현우 | 변경이 필요하면 제안만 한다 |
+| `compose.prod.yml`, `Caddyfile`, `deploy/`, `.github/workflows/`, 배포 | 현우 | 변경이 필요하면 제안만 한다 |
 | 발표용 확장 기능 (P2~P4) | 승환 | – |
 
 ## 제품 규칙 (모든 영역 공통)
