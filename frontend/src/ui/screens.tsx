@@ -462,7 +462,6 @@ export function Partner({ phrase, onOk, onAgain }: { phrase: Phrase; onOk: () =>
         {JA.partner.show}
       </p>
       <div className="partner-body">
-        <p className="partner-who">{PARTNER.who}</p>
         <p className="partner-lead">{PARTNER.lead}</p>
         <p className="partner-quote">“{phrase.ko}”</p>
       </div>

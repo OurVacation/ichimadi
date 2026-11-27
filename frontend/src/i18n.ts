@@ -69,7 +69,7 @@ export const JA = {
     label: '開けています…',
   },
   card: {
-    back: '← 一覧',
+    back: '← マップへ',
     meaning: '意味',
     when: '使うとき',
     listen: '▶ 音声で聞く',
@@ -87,7 +87,7 @@ export const JA = {
   book: {
     title: 'イチマディ スタンプ帳',
     lead: '通じたひとことにハンコが押されます',
-    back: '← 一覧',
+    back: '← マップへ',
     empty: 'まだ',
     complete: 'コンプリート！',
     completeLead: (n: number) => `${n}つのひとことがすべて通じました`,
@@ -98,8 +98,7 @@ export const JA = {
 }
 
 export const PARTNER = {
-  who: '상대방께',
-  lead: '이분이 한국어로 말했어요. 알아들으셨으면 눌러 주세요',
+  lead: '알아들으셨으면 「알아들었어요」, 잘 안 들렸으면 「다시 한 번」을 눌러 주세요',
   ok: '알아들었어요',
   again: '다시 한 번',
 }
