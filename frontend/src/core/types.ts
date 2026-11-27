@@ -5,6 +5,8 @@ export type Animal = 'tiger' | 'rabbit' | 'magpie' | 'bear'
 /** 행사장 한마디 하나. 문장이 확정되면 data/phrases.ts만 바꾼다. */
 export type Phrase = {
   id: string
+  /** 지도 핀에 붙는 짧은 이름표 (일본어) */
+  label: string
   ko: string
   kana: string
   ja: string
