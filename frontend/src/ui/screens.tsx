@@ -3,8 +3,10 @@ import type { Animal, NameCandidate, NameGenerator, Phrase, Profile, Stamp } fro
 import { hangulName } from '../core/names.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
+import { POUCH_SPOTS } from '../data/boardMap.ts'
 import { PHRASES } from '../data/phrases.ts'
 import { JA, PARTNER } from '../i18n.ts'
+import { MapArt } from './map.tsx'
 import { Pouch } from './parts.tsx'
 import { ANIMALS, Seal } from './stamps.tsx'
 
@@ -96,10 +98,7 @@ export function Login({
 const NAME_DEBOUNCE_MS = 500
 
 type Names =
-  | { kind: 'empty' }
-  | { kind: 'waiting' }
-  | { kind: 'ready'; candidates: NameCandidate[] }
-  | { kind: 'failed' }
+  { kind: 'empty' } | { kind: 'waiting' } | { kind: 'ready'; candidates: NameCandidate[] } | { kind: 'failed' }
 
 /** 처음 설정: 위에 이름, 아래에 동물. 이름을 기다리는 동안 동물을 고를 수 있다. 결정은 둘 다 정한 뒤 한 번 */
 export function Setup({
@@ -244,7 +243,12 @@ export function Setup({
           {JA.error}
         </p>
       )}
-      <button className="btn btn-bottom" type="button" disabled={!animal || koreanName === null || busy} onClick={confirm}>
+      <button
+        className="btn btn-bottom"
+        type="button"
+        disabled={!animal || koreanName === null || busy}
+        onClick={confirm}
+      >
         {JA.setup.confirm}
       </button>
     </main>
@@ -291,25 +295,30 @@ export function Board({
         </div>
       </div>
       <p className="hint">{JA.board.hint}</p>
-      <ol className="pouch-grid">
-        {PHRASES.map((p, i) => {
-          const got = !!stampOf(stamps, p.id)
-          return (
-            <li key={p.id}>
-              <button className={`pouch-btn${got ? ' got' : ''}`} type="button" onClick={() => onOpen(p)}>
-                <span className="pouch-num">{i + 1}</span>
-                <Pouch />
-                {got && (
-                  <span className="pouch-mark" role="img" aria-label={JA.board.done}>
-                    <Seal animal={profile.animal} name={null} />
+      <div className="map">
+        <MapArt />
+        <ol className="map-pins">
+          {PHRASES.map((p, i) => {
+            const got = !!stampOf(stamps, p.id)
+            const spot = POUCH_SPOTS[p.id]
+            return (
+              <li key={p.id} className="pin" style={{ left: `${spot.x}%`, top: `${spot.y}%` }}>
+                <button className={`pin-btn${got ? ' got' : ''}`} type="button" onClick={() => onOpen(p)}>
+                  <Pouch />
+                  {got && (
+                    <span className="pin-mark" role="img" aria-label={JA.board.done}>
+                      <Seal animal={profile.animal} name={null} decorative />
+                    </span>
+                  )}
+                  <span className="pin-label">
+                    <b>{i + 1}</b> {p.label}
                   </span>
-                )}
-                <span className="pouch-when">{p.when}</span>
-              </button>
-            </li>
-          )
-        })}
-      </ol>
+                </button>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
     </main>
   )
 }
@@ -419,7 +428,13 @@ export function Stamped({
   const stamp = stampOf(stamps, phrase.id)
   return (
     <main className="page center stack">
-      <Seal animal={profile.animal} name={profile.koreanName} time={stamp && formatStampTime(stamp.at)} size="big" stampIn />
+      <Seal
+        animal={profile.animal}
+        name={profile.koreanName}
+        time={stamp && formatStampTime(stamp.at)}
+        size="big"
+        stampIn
+      />
       <h2 className="done-title">{JA.stamped.title}</h2>
       <p className="ja">{phrase.ja}</p>
       <Progress stamps={stamps} />
@@ -491,7 +506,11 @@ export function Book({
           const s = stampOf(stamps, ph.id)
           return (
             <li key={ph.id} className={`slot${s ? ' got' : ''}`}>
-              {s ? <Seal animal={profile.animal} name={profile.koreanName} /> : <span className="slot-empty">{JA.book.empty}</span>}
+              {s ? (
+                <Seal animal={profile.animal} name={profile.koreanName} />
+              ) : (
+                <span className="slot-empty">{JA.book.empty}</span>
+              )}
               <span className="slot-ja">{ph.ja}</span>
               {s && <span className="slot-time">{formatStampTime(s.at)}</span>}
             </li>

@@ -9,7 +9,11 @@ export function parseLoginHash(hash: string): LoginHash {
   const dot = body.indexOf('.')
   if (dot <= 0 || dot === body.length - 1) return { kind: 'malformed' }
   try {
-    return { kind: 'login', id: decodeURIComponent(body.slice(0, dot)), password: decodeURIComponent(body.slice(dot + 1)) }
+    return {
+      kind: 'login',
+      id: decodeURIComponent(body.slice(0, dot)),
+      password: decodeURIComponent(body.slice(dot + 1)),
+    }
   } catch {
     return { kind: 'malformed' }
   }
