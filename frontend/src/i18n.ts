@@ -12,6 +12,7 @@ export const JA = {
     submit: 'はじめる',
     busy: '確認しています…',
     failed: 'IDかパスワードが違います',
+    qrBroken: 'QRコードを読めませんでした。IDとパスワードを入れてください',
   },
   animal: {
     title: 'ハンコの動物を選んでください',

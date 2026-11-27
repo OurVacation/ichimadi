@@ -12,20 +12,30 @@ type Result = Promise<boolean>
 
 const stampOf = (stamps: Stamp[], phraseId: string) => stamps.find((s) => s.phraseId === phraseId)
 
-export function Login({ onSubmit }: { onSubmit: (id: string, password: string) => Promise<'ok' | 'failed' | 'error'> }) {
+/** 로그인 화면 아래 알림. checking은 QR로 로그인하는 동안 */
+export type LoginNotice = 'none' | 'checking' | 'failed' | 'error' | 'qrBroken'
+const NOTICE_TEXT = { failed: JA.login.failed, error: JA.error, qrBroken: JA.login.qrBroken }
+
+export function Login({
+  onSubmit,
+  notice = 'none',
+}: {
+  onSubmit: (id: string, password: string) => Promise<'ok' | 'failed' | 'error'>
+  notice?: LoginNotice
+}) {
   const [id, setId] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
+  const [own, setOwn] = useState<LoginNotice | null>(null)
+  const shown = own ?? notice
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
-    setMessage('')
+    setOwn('none')
     const r = await onSubmit(id.trim(), password)
     setBusy(false)
-    if (r === 'failed') setMessage(JA.login.failed)
-    if (r === 'error') setMessage(JA.error)
+    setOwn(r === 'ok' ? 'none' : r)
   }
 
   return (
@@ -63,12 +73,17 @@ export function Login({ onSubmit }: { onSubmit: (id: string, password: string) =
             required
           />
         </label>
-        {message && (
-          <p className="error" role="alert">
-            {message}
+        {shown === 'checking' && (
+          <p className="muted" aria-live="polite">
+            {JA.login.busy}
           </p>
         )}
-        <button className="btn" type="submit" disabled={busy}>
+        {shown !== 'none' && shown !== 'checking' && (
+          <p className="error" role="alert">
+            {NOTICE_TEXT[shown]}
+          </p>
+        )}
+        <button className="btn" type="submit" disabled={busy || shown === 'checking'}>
           {busy ? JA.login.busy : JA.login.submit}
         </button>
       </form>

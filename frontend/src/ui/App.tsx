@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useReducer } from 'react'
+import { useCallback, useEffect, useReducer, useState } from 'react'
 import type { Animal, Store } from '../core/types.ts'
+import type { LoginHash } from '../core/loginHash.ts'
 import { firstScreen, signIn } from '../core/session.ts'
 import { reduce } from './flow.ts'
-import { AnimalPick, Board, Book, Card, Login, NamePick, Opening, Partner, Stamped } from './screens.tsx'
+import { AnimalPick, Board, Book, Card, Login, NamePick, Opening, Partner, Stamped, type LoginNotice } from './screens.tsx'
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
@@ -10,26 +11,13 @@ const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce
 export type Session = { load(): string | null; save(accountId: string | null): void }
 
 /** 저장은 store로만 한다 (P-05). 저장이 끝난 결과만 흐름(reduce)에 넣는다. */
-export function App({ store, session }: { store: Store; session: Session }) {
+export function App({ store, session, qrLogin }: { store: Store; session: Session; qrLogin: LoginHash }) {
   const [state, dispatch] = useReducer(reduce, null)
+  const [notice, setNotice] = useState<LoginNotice>(qrLogin.kind === 'login' ? 'checking' : qrLogin.kind === 'malformed' ? 'qrBroken' : 'none')
   const pouchOpened = useCallback(() => dispatch({ type: 'pouchOpened' }), [])
 
-  useEffect(() => {
-    const accountId = session.load()
-    if (!accountId) return
-    let live = true
-    Promise.all([store.getProfile(accountId), store.getStamps(accountId)])
-      .then(([profile, stamps]) => {
-        if (live) dispatch({ type: 'signedIn', accountId, profile, stamps, first: firstScreen(profile) })
-      })
-      .catch(() => session.save(null))
-    return () => {
-      live = false
-    }
-  }, [store, session])
-
-  if (!state) {
-    const login = async (id: string, password: string) => {
+  const login = useCallback(
+    async (id: string, password: string) => {
       try {
         const r = await signIn(store, id, password)
         if (!r) return 'failed' as const
@@ -40,9 +28,33 @@ export function App({ store, session }: { store: Store; session: Session }) {
       } catch {
         return 'error' as const
       }
+    },
+    [store, session],
+  )
+
+  useEffect(() => {
+    let live = true
+    // QR 카드로 열었으면 저장된 로그인보다 카드의 계정이 먼저다
+    if (qrLogin.kind === 'login') {
+      login(qrLogin.id, qrLogin.password).then((r) => {
+        if (live) setNotice(r === 'ok' ? 'none' : r)
+      })
+    } else {
+      const accountId = session.load()
+      if (accountId) {
+        Promise.all([store.getProfile(accountId), store.getStamps(accountId)])
+          .then(([profile, stamps]) => {
+            if (live) dispatch({ type: 'signedIn', accountId, profile, stamps, first: firstScreen(profile) })
+          })
+          .catch(() => session.save(null))
+      }
     }
-    return <Login onSubmit={login} />
-  }
+    return () => {
+      live = false
+    }
+  }, [store, session, qrLogin, login])
+
+  if (!state) return <Login onSubmit={login} notice={notice} />
 
   const { accountId, profile, stamps, screen } = state
 
