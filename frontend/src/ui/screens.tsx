@@ -258,6 +258,8 @@ export function Board({
   profile,
   stamps,
   phrases,
+  pending,
+  notice,
   onOpen,
   onBook,
   onLogout,
@@ -265,6 +267,10 @@ export function Board({
   profile: Profile
   stamps: Stamp[]
   phrases: Phrase[]
+  /** 아직 서버에 못 보낸 도장 수 */
+  pending: number
+  /** 서버가 받지 않은 도장의 안내 */
+  notice: string | null
   onOpen: (p: Phrase) => void
   onBook: () => void
   onLogout: () => void
@@ -276,6 +282,16 @@ export function Board({
         <strong className="brand-sm">{JA.appName}</strong>
         <Progress stamps={stamps} phrases={phrases} />
       </header>
+      {pending > 0 && (
+        <p className="pending" role="status">
+          {JA.board.pending(pending)}
+        </p>
+      )}
+      {notice && (
+        <p className="error" role="alert">
+          {notice}
+        </p>
+      )}
       <div className="me">
         <Seal animal={profile.animal} name={profile.koreanName} />
         <div className="me-links">
@@ -427,15 +443,8 @@ export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () =>
   )
 }
 
-export function Partner({ phrase, onOk, onAgain }: { phrase: Phrase; onOk: () => Result; onAgain: () => void }) {
-  const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState<string | null>(null)
-  async function ok() {
-    setBusy(true)
-    const message = await onOk()
-    setBusy(false)
-    setFailed(message)
-  }
+/** 「알아들었어요」는 서버를 기다리지 않는다. 저장은 뒤에서 하고 못 하면 한마디판에 띠로 알린다 */
+export function Partner({ phrase, onOk, onAgain }: { phrase: Phrase; onOk: () => void; onAgain: () => void }) {
   return (
     <main className="partner" lang="ko">
       <p className="partner-show" lang="ja">
@@ -446,18 +455,10 @@ export function Partner({ phrase, onOk, onAgain }: { phrase: Phrase; onOk: () =>
         <p className="partner-lead">{PARTNER.lead}</p>
         <p className="partner-quote">“{phrase.ko}”</p>
       </div>
-      {failed && (
-        <p className="partner-error" role="alert">
-          {PARTNER.saveFailed}
-          <span className="partner-error-ja" lang="ja">
-            {failed}
-          </span>
-        </p>
-      )}
-      <button className="partner-ok" type="button" disabled={busy} onClick={ok}>
+      <button className="partner-ok" type="button" onClick={onOk}>
         {PARTNER.ok}
       </button>
-      <button className="partner-again" type="button" disabled={busy} onClick={onAgain}>
+      <button className="partner-again" type="button" onClick={onAgain}>
         {PARTNER.again}
       </button>
     </main>

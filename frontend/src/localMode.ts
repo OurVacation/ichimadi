@@ -1,5 +1,6 @@
 // VITE_STORE=local: 오프라인 시연용. 기기 저장 + .env.local의 체험 계정 + content/phrases.json.
 // main.tsx가 이 모드일 때만 불러오므로 서버 모드 번들에는 체험 계정과 한마디가 들어가지 않는다.
+import { createStampOutbox } from './api/stampOutbox.ts'
 import { temporaryNameGenerator } from './core/nameGenerator.ts'
 import { createLocalStore, type KeyValueStorage } from './core/store.ts'
 import { TRIAL_ACCOUNTS } from './data/accounts.ts'
@@ -9,17 +10,21 @@ import type { Mode } from './main.tsx'
 const SESSION_KEY = 'ichimadi:session'
 
 export function localMode(storage: KeyValueStorage): Mode {
+  const store = createLocalStore(storage, TRIAL_ACCOUNTS)
+  const load = () => {
+    try {
+      const saved = storage.getItem(SESSION_KEY)
+      return TRIAL_ACCOUNTS.some((a) => a.id === saved) ? saved : null
+    } catch {
+      return null
+    }
+  }
   return {
-    store: createLocalStore(storage, TRIAL_ACCOUNTS),
+    store,
+    // 기기 저장은 실패하지 않으므로 넣자마자 저장된다. 서버 모드와 같은 길을 쓴다
+    outbox: createStampOutbox({ storage, send: store.addStamp, currentAccount: load }),
     session: {
-      load: () => {
-        try {
-          const saved = storage.getItem(SESSION_KEY)
-          return TRIAL_ACCOUNTS.some((a) => a.id === saved) ? saved : null
-        } catch {
-          return null
-        }
-      },
+      load,
       save: (accountId) => {
         try {
           if (accountId) storage.setItem(SESSION_KEY, accountId)

@@ -12,8 +12,18 @@ export type Screen =
   | { kind: 'stamped'; phrase: Phrase }
   | { kind: 'book'; closed: boolean }
 
-/** phrases는 로그인 직후 받아 둔 한마디. 카드는 여기서만 읽으므로 네트워크를 기다리지 않는다 */
-export type Session = { accountId: string; profile: Profile; stamps: Stamp[]; phrases: Phrase[]; screen: Screen }
+/**
+ * phrases는 로그인 직후 받아 둔 한마디. 카드는 여기서만 읽으므로 네트워크를 기다리지 않는다.
+ * stamps는 아직 서버에 못 보낸 도장도 포함한다. stampNotice는 서버가 받지 않은 도장의 안내 (서버 문구)
+ */
+export type Session = {
+  accountId: string
+  profile: Profile
+  stamps: Stamp[]
+  phrases: Phrase[]
+  screen: Screen
+  stampNotice: string | null
+}
 
 /** null이면 로그인 화면 */
 export type State = Session | null
@@ -25,7 +35,12 @@ export type Event =
   | { type: 'pouchOpened' }
   | { type: 'said' }
   | { type: 'again' }
-  | { type: 'stamped'; stamps: Stamp[] }
+  /** 「알아들었어요」: 서버를 기다리지 않고 기기 시각으로 바로 찍는다 */
+  | { type: 'stamped'; at: string }
+  /** 서버가 준 도장 목록으로 바꾼다. 어느 화면에서든 (지금 계정 것만) */
+  | { type: 'stampsSynced'; accountId: string; stamps: Stamp[] }
+  /** 서버가 없는 한마디라고 해서 버린 도장 */
+  | { type: 'stampDropped'; accountId: string; phraseId: string; message: string }
   | { type: 'toBoard' }
   | { type: 'toBook' }
   | { type: 'closeBook' }
@@ -35,10 +50,15 @@ export type Event =
 /** 지금 화면에서 받을 수 없는 이벤트는 무시하고 같은 상태를 돌려준다. */
 export function reduce(state: State, e: Event): State {
   if (e.type === 'signedIn') {
-    return { accountId: e.accountId, profile: e.profile, stamps: e.stamps, phrases: e.phrases, screen: { kind: e.first } }
+    return { accountId: e.accountId, profile: e.profile, stamps: e.stamps, phrases: e.phrases, screen: { kind: e.first }, stampNotice: null }
   }
   if (!state) return state
   if (e.type === 'signOut') return null
+  if (e.type === 'stampsSynced') return e.accountId === state.accountId ? { ...state, stamps: e.stamps } : state
+  if (e.type === 'stampDropped') {
+    if (e.accountId !== state.accountId) return state
+    return { ...state, stamps: state.stamps.filter((st) => st.phraseId !== e.phraseId), stampNotice: e.message }
+  }
   const s = state.screen
   const go = (screen: Screen): State => ({ ...state, screen })
 
@@ -54,8 +74,12 @@ export function reduce(state: State, e: Event): State {
       return s.kind === 'card' ? go({ kind: 'partner', phrase: s.phrase }) : state
     case 'again':
       return s.kind === 'partner' ? go({ kind: 'card', phrase: s.phrase }) : state
-    case 'stamped':
-      return s.kind === 'partner' ? { ...state, stamps: e.stamps, screen: { kind: 'stamped', phrase: s.phrase } } : state
+    case 'stamped': {
+      if (s.kind !== 'partner') return state
+      const has = state.stamps.some((st) => st.phraseId === s.phrase.id)
+      const stamps = has ? state.stamps : [...state.stamps, { phraseId: s.phrase.id, at: e.at }]
+      return { ...state, stamps, stampNotice: null, screen: { kind: 'stamped', phrase: s.phrase } }
+    }
     case 'toBoard':
       return s.kind === 'card' || s.kind === 'stamped' || s.kind === 'book' ? go({ kind: 'board' }) : state
     case 'toBook':

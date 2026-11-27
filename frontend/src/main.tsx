@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { createApiClient } from './api/client.ts'
 import { createApiNameGenerator } from './api/names.ts'
 import { createApiPhraseSource } from './api/phrases.ts'
+import { createStampOutbox, type StampOutbox } from './api/stampOutbox.ts'
 import { createApiStore } from './api/store.ts'
 import { parseLoginHash } from './core/loginHash.ts'
 import { temporaryNameGenerator } from './core/nameGenerator.ts'
@@ -12,13 +13,15 @@ import type { NameGenerator, PhraseSource, Store } from './core/types.ts'
 import { App, type Session } from './ui/App.tsx'
 import './index.css'
 
-export type Mode = { store: Store; session: Session; generateNames: NameGenerator; loadPhrases: PhraseSource }
+export type Mode = { store: Store; outbox: StampOutbox; session: Session; generateNames: NameGenerator; loadPhrases: PhraseSource }
 
 /** 기본: 같은 출처의 /api. 로그인 토큰과 받은 한마디는 기기에 남긴다 */
 function apiMode(storage: KeyValueStorage): Mode {
   const client = createApiClient({ fetch: (input, init) => fetch(input, init), storage })
+  const store = createApiStore(client)
   return {
-    store: createApiStore(client),
+    store,
+    outbox: createStampOutbox({ storage, send: store.addStamp, currentAccount: () => client.accountId() }),
     session: {
       load: () => client.accountId(),
       // 로그인할 때 토큰은 store가 저장한다. 여기서는 로그아웃만 한다

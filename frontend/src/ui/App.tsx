@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { NameGenerator, PhraseSource, Store } from '../core/types.ts'
 import { errorMessage } from '../api/client.ts'
+import { withPending, type StampOutbox } from '../api/stampOutbox.ts'
 import type { LoginHash } from '../core/loginHash.ts'
 import { JA } from '../i18n.ts'
 import { firstScreen } from '../core/session.ts'
@@ -23,12 +24,15 @@ export type Session = {
 /** 저장은 store로만 한다 (P-05). 저장이 끝난 결과만 흐름(reduce)에 넣는다. */
 export function App({
   store,
+  outbox,
   session,
   qrLogin,
   generateNames,
   loadPhrases,
 }: {
   store: Store
+  /** 도장 보낼 목록. 화면에 먼저 찍고 저장은 여기서 뒤에 한다 */
+  outbox: StampOutbox
   session: Session
   qrLogin: LoginHash
   generateNames: NameGenerator
@@ -45,24 +49,38 @@ export function App({
   const handledQr = useRef<LoginHash | null>(null)
   const pouchOpened = useCallback(() => dispatch({ type: 'pouchOpened' }), [])
 
+  useEffect(
+    () =>
+      outbox.subscribe((e) =>
+        dispatch(
+          e.kind === 'synced'
+            ? { type: 'stampsSynced', accountId: e.accountId, stamps: e.stamps }
+            : { type: 'stampDropped', accountId: e.accountId, phraseId: e.phraseId, message: e.message },
+        ),
+      ),
+    [outbox],
+  )
+
   const signOut = useCallback(() => {
     gate.cancel()
+    outbox.stop()
     session.save(null)
     setFailedLoad(null)
     setRestoring(false)
     dispatch({ type: 'signOut' })
-  }, [session, gate])
+  }, [session, gate, outbox])
 
   useEffect(
     () =>
       session.onExpired?.(() => {
         gate.cancel()
+        outbox.stop()
         setFailedLoad(null)
         setRestoring(false)
         setNotice(JA.login.expired)
         dispatch({ type: 'signOut' })
       }),
-    [session, gate],
+    [session, gate, outbox],
   )
 
   /** 한마디판에 필요한 것(내 정보, 도장, 한마디)을 한 번에 받아 들어간다. 한마디는 이때만 받는다 */
@@ -73,7 +91,9 @@ export function App({
         const [profile, stamps, phrases] = await Promise.all([store.getProfile(accountId), store.getStamps(accountId), loadPhrases()])
         if (!current()) return
         setFailedLoad(null)
-        dispatch({ type: 'signedIn', accountId, profile, stamps, phrases, first: firstScreen(profile) })
+        // 아직 못 보낸 도장도 찍힌 것으로 보이고, 들어오자마자 다시 보낸다
+        dispatch({ type: 'signedIn', accountId, profile, stamps: withPending(stamps, outbox.pending(accountId)), phrases, first: firstScreen(profile) })
+        outbox.start(accountId)
       } catch (e) {
         // 로그인이 끊겨서(401) 실패했으면 current()가 false다. 로그인 화면이 맞다
         if (current()) setFailedLoad({ accountId, message: errorMessage(e, JA.load.lead) })
@@ -81,7 +101,7 @@ export function App({
         if (current()) setRestoring(false)
       }
     },
-    [store, loadPhrases, gate],
+    [store, loadPhrases, gate, outbox],
   )
 
   /** 실패하면 보여 줄 문구, 성공하면 null */
@@ -119,7 +139,7 @@ export function App({
   if (failedLoad) return <LoadFailed message={failedLoad.message} onRetry={() => enter(failedLoad.accountId)} onLogout={signOut} />
   if (!state) return restoring ? <Loading /> : <Login onSubmit={login} notice={notice} />
 
-  const { accountId, profile, stamps, phrases, screen } = state
+  const { accountId, profile, stamps, phrases, screen, stampNotice } = state
 
   const saveProfile = async (next: typeof profile) => {
     try {
@@ -140,6 +160,8 @@ export function App({
           profile={profile}
           stamps={stamps}
           phrases={phrases}
+          pending={outbox.pending(accountId).length}
+          notice={stampNotice}
           onOpen={(phrase) => dispatch({ type: 'openPouch', phrase, instant: reducedMotion() })}
           onBook={() => dispatch({ type: 'toBook' })}
           onLogout={signOut}
@@ -154,14 +176,10 @@ export function App({
         <Partner
           phrase={screen.phrase}
           onAgain={() => dispatch({ type: 'again' })}
-          onOk={async () => {
-            try {
-              const next = await store.addStamp(accountId, screen.phrase.id)
-              dispatch({ type: 'stamped', stamps: next })
-              return null
-            } catch (e) {
-              return errorMessage(e)
-            }
+          onOk={() => {
+            const at = new Date()
+            dispatch({ type: 'stamped', at: at.toISOString() })
+            outbox.add(accountId, screen.phrase.id, at)
           }}
         />
       )

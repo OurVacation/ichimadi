@@ -61,6 +61,7 @@ export const JA = {
     logout: 'ログアウト',
     logoutConfirm: 'ログアウトしますか？',
     done: '通じた',
+    pending: (n: number) => `保存待ち ${n}件 · 通信が戻ったら自動で保存します`,
   },
   opening: {
     label: '開けています…',
@@ -99,5 +100,4 @@ export const PARTNER = {
   lead: '이분이 한국어로 말했어요. 알아들으셨으면 눌러 주세요',
   ok: '알아들었어요',
   again: '다시 한 번',
-  saveFailed: '저장하지 못했어요. 한 번 더 눌러 주세요',
 }

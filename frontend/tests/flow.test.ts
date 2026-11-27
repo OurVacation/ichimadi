@@ -36,8 +36,9 @@ test('로그인 때 받은 한마디로 카드를 열고 도장을 받는다', (
   s = reduce(s, { type: 'openPouch', phrase: phrases[1], instant: true })
   assert.deepEqual(s?.screen, { kind: 'card', phrase: phrases[1] })
   s = reduce(s, { type: 'said' })
-  s = reduce(s, { type: 'stamped', stamps: [stamp('q2')] })
+  s = reduce(s, { type: 'stamped', at: '2026-11-29T05:00:00Z' })
   assert.deepEqual(s?.screen, { kind: 'stamped', phrase: phrases[1] })
+  assert.deepEqual(s?.stamps, [stamp('q2')])
   assert.deepEqual(s?.phrases, phrases)
 })
 
@@ -70,4 +71,31 @@ test('지도: 자리가 없는 한마디 id는 지도에서 빼고 나머지는 
     ],
   )
   assert.deepEqual(placePins([phrase('zz-new')]), [])
+})
+
+test('「알아들었어요」는 서버를 기다리지 않고 바로 찍는다. 이미 받은 한마디는 첫 시각 그대로', () => {
+  const phrases = [phrase('q1')]
+  const toPartner = (st: State) => reduce(reduce(reduce(st, { type: 'openPouch', phrase: phrases[0], instant: true }), { type: 'said' }), { type: 'stamped', at: '2026-11-29T09:00:00Z' })
+  assert.deepEqual(toPartner(signedIn(phrases))?.stamps, [{ phraseId: 'q1', at: '2026-11-29T09:00:00Z' }])
+  assert.deepEqual(toPartner(signedIn(phrases, [stamp('q1')]))?.stamps, [stamp('q1')])
+})
+
+test('서버 도장 목록은 어느 화면에서든 바꾼다. 다른 계정의 목록은 무시한다', () => {
+  const phrases = [phrase('q1'), phrase('q2')]
+  const onCard = reduce(signedIn(phrases), { type: 'openPouch', phrase: phrases[0], instant: true })
+  const synced = reduce(onCard, { type: 'stampsSynced', accountId: 'j01', stamps: [stamp('q2')] })
+  assert.deepEqual(synced?.stamps, [stamp('q2')])
+  assert.deepEqual(synced?.screen, onCard?.screen)
+  assert.equal(reduce(onCard, { type: 'stampsSynced', accountId: 'other', stamps: [stamp('q2')] }), onCard)
+})
+
+test('서버가 받지 않은 도장(404)은 지우고 서버 문구를 남긴다. 다음 도장을 찍으면 문구는 사라진다', () => {
+  const phrases = [phrase('q1'), phrase('q2')]
+  const s = reduce(signedIn(phrases, [stamp('q1'), stamp('q2')]), { type: 'stampDropped', accountId: 'j01', phraseId: 'q1', message: 'この一言は見つかりませんでした' })
+  assert.deepEqual(s?.stamps, [stamp('q2')])
+  assert.equal(s?.stampNotice, 'この一言は見つかりませんでした')
+  const next = reduce(reduce(reduce(s, { type: 'openPouch', phrase: phrases[0], instant: true }), { type: 'said' }), { type: 'stamped', at: '2026-11-29T09:00:00Z' })
+  assert.equal(next?.stampNotice, null)
+  const other = signedIn(phrases, [stamp('q1')])
+  assert.equal(reduce(other, { type: 'stampDropped', accountId: 'other', phraseId: 'q1', message: 'x' }), other)
 })
