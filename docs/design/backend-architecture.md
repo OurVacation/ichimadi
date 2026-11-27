@@ -36,7 +36,7 @@ flowchart LR
   content["content/phrases.json<br/>content/phrase_sets.json"]
 
   phone -- "/api/*  Bearer JWT" --> caddy --> api --> db
-  api -- "HTTPS, 2.5초 제한" --> gemini
+  api -- "HTTPS, 10초 제한" --> gemini
   content -. "빌드 시 번들" .-> phone
   content -. "scripts/seed.py" .-> db
 ```
@@ -129,7 +129,7 @@ sequenceDiagram
   alt 캐시 있음
     S-->>FE: 200 candidates
   else 캐시 없음
-    S->>G: generate(input_key) (2.5초 제한)
+    S->>G: generate(input_key) (10초 제한)
     alt 시간 초과·오류·키 없음
       S-->>FE: 503 name_suggest_unavailable
       Note over FE: temporaryNameGenerator로 후보 표시
@@ -164,7 +164,7 @@ sequenceDiagram
 | 모델 | `GEMINI_MODEL` 설정값. Flash 계열 (구현 때 사용 가능한 최신 Flash 모델 이름으로 정한다) |
 | 입력 | 일본 이름 **전체(성+이름)**. FE `NameGenerator(fullName)`와 같다. 정규화(NFKC → trim → 연속 공백 하나로) 뒤 1~30자 |
 | 출력 | JSON 스키마 지정(`response_schema`): `[{name, note}]` 3개. FE `NameCandidate {name, note?}`와 같은 이름 |
-| 시간 제한 | `NAME_SUGGEST_TIMEOUT_SECONDS` = 2.5. FE는 3초 |
+| 시간 제한 | `NAME_SUGGEST_TIMEOUT_SECONDS` = 10 (Gemini API 최소값). FE는 3초 |
 | 키 없음 | `GEMINI_API_KEY`가 비어 있으면 호출 없이 503 (로컬 개발은 키 없이도 FE 대비 규칙으로 동작) |
 | 검증 | `name` `^[가-힣]{1,10}$`, 서로 다름, 정확히 3개. `note` 1~40자. 하나라도 어기면 503(저장 안 함) |
 | 캐시 | `name_suggestions` (정규화 입력 → 후보). 같은 이름은 같은 결과. FE가 500ms 디바운스로 입력 중간값도 보내므로 캐시가 호출 수를 줄인다 |
@@ -197,7 +197,8 @@ sequenceDiagram
 | `JWT_EXPIRE_HOURS` | `72` | |
 | `GEMINI_API_KEY` | 빈 값 | 없으면 이름 추천은 항상 503 |
 | `GEMINI_MODEL` | Flash 계열 모델 이름 | |
-| `NAME_SUGGEST_TIMEOUT_SECONDS` | `2.5` | |
+| `GEMINI_THINKING_LEVEL` | `low` | 모델마다 받는 값이 다르다 |
+| `NAME_SUGGEST_TIMEOUT_SECONDS` | `10` | 10초보다 작게 줘도 10초로 올린다 |
 | `DATABASE_URL`, `CORS_ORIGINS` | (있음) | |
 
 prod 값(`JWT_SECRET`, `APP_ENV`, `GEMINI_API_KEY`, `GEMINI_MODEL`)은 현우 님께 `compose.prod.yml` env 추가를 **제안**한다.

@@ -3,12 +3,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+from google.genai import _api_client, _transformers, types
 from sqlalchemy import func, select
 
 from app.core.config import Settings
 from app.deps import get_name_generator
 from app.llm.base import Candidate, NameGeneratorError
-from app.llm.gemini import GeminiNameGenerator
+from app.llm.gemini import RESPONSE_SCHEMA, GeminiNameGenerator
 from app.main import app
 from app.models import NameSuggestion
 
@@ -146,17 +147,68 @@ def test_sdk_configuration():
         client.models.generate_content.return_value = SimpleNamespace(
             text=json.dumps([c.model_dump() for c in CANDIDATES])
         )
-        generator = GeminiNameGenerator(
-            Settings(gemini_api_key="fake", name_suggest_timeout_seconds=2.5)
-        )
+        generator = GeminiNameGenerator(Settings(gemini_api_key="fake"))
         assert generator.generate("田中 陽子") == CANDIDATES
         options = factory.call_args.kwargs["http_options"]
-        assert options.timeout == 2500
+        assert options.timeout == 10_000
         assert options.retry_options.attempts == 1
         arguments = client.models.generate_content.call_args.kwargs
         assert arguments["contents"] == "田中 陽子"
-        assert arguments["config"].response_schema == list[Candidate]
+        assert arguments["config"].response_schema == RESPONSE_SCHEMA
         assert arguments["config"].response_mime_type == "application/json"
+        assert arguments["config"].thinking_config.thinking_level == types.ThinkingLevel.LOW
+
+
+def test_timeout_is_at_least_api_minimum():
+    # Gemini API 는 10초 미만의 마감 시간을 400 으로 거부한다
+    assert GeminiNameGenerator(Settings(name_suggest_timeout_seconds=2.5)).timeout_ms == 10_000
+    assert GeminiNameGenerator(Settings(name_suggest_timeout_seconds=15)).timeout_ms == 15_000
+
+
+@pytest.mark.parametrize(
+    ("level", "expected"),
+    [("minimal", types.ThinkingLevel.MINIMAL), ("low", types.ThinkingLevel.LOW), ("", None)],
+)
+def test_thinking_level(level, expected):
+    config = GeminiNameGenerator(Settings(gemini_thinking_level=level)).generation_config()
+    assert (config.thinking_config.thinking_level if config.thinking_config else None) == expected
+
+
+def test_response_schema_converts_with_sdk():
+    # 실제 SDK 변환 함수로 확인한다 (네트워크 없음).
+    # 예시(examples) 같은 추가 키가 섞이면 여기서 실패한다.
+    schema = _transformers.t_schema(None, RESPONSE_SCHEMA)
+    assert schema.type == types.Type.ARRAY
+    assert set(schema.items.properties) == {"name", "note"}
+    assert schema.items.description is None
+
+
+def test_request_reaches_http_layer():
+    # 요청 직전(HTTP 전송)까지 실제 SDK 코드를 그대로 통과하는지 확인한다. 전송은 가로채서 막는다.
+    captured = {}
+
+    class Sent(Exception):
+        pass
+
+    def fake_request(self, http_method, path, request_dict, http_options=None):
+        captured.update(path=path, body=request_dict, timeout=self._http_options.timeout)
+        raise Sent
+
+    with patch.object(_api_client.BaseApiClient, "request", fake_request):
+        generator = GeminiNameGenerator(
+            Settings(
+                gemini_api_key="fake", gemini_model="test-model", gemini_thinking_level="minimal"
+            )
+        )
+        with pytest.raises(NameGeneratorError) as raised:
+            generator.generate("田中 陽子")
+    assert isinstance(raised.value.__cause__, Sent)
+    assert captured["path"] == "models/test-model:generateContent"
+    assert captured["timeout"] == 10_000
+    config = captured["body"]["generationConfig"]
+    thinking = config["thinkingConfig"]  # 이 단계의 키 표기는 SDK 버전에 따라 다르다
+    assert thinking.get("thinkingLevel", thinking.get("thinking_level")) == "MINIMAL"
+    assert "examples" not in json.dumps(config["responseSchema"])
 
 
 @pytest.mark.parametrize(

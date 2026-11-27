@@ -177,7 +177,7 @@ FE의 `NameGenerator = (fullName) => Promise<NameCandidate[]>`(`frontend/src/cor
 - `candidates`는 항상 3개다. `name`은 `^[가-힣]{1,10}$`, 서로 다르다. `note`는 왜 이 이름인지(일본어, 1~40자).
 - 짓는 규칙: **성에서 한 글자를 골라 한국 성처럼 + 이름을 한국 이름처럼**. 성이 없으면 이름만 한국식으로. 자세한 프롬프트 규칙은 [구성 계획](backend-architecture.md) §6.
 - 같은 `ja_name`(정규화 기준)이면 같은 후보가 나온다(서버 캐시).
-- 서버는 LLM을 최대 `NAME_SUGGEST_TIMEOUT_SECONDS`(기본 2.5초) 기다린다.
+- 서버는 LLM을 최대 `NAME_SUGGEST_TIMEOUT_SECONDS`(기본 10초, API 최소값) 기다린다. FE는 3초 뒤 자체 규칙으로 대신한다.
 - 한글로 넣은 이름은 FE가 서버를 부르지 않고 그대로 쓴다(`hangulName()`). 서버는 따로 처리하지 않는다.
 
 | status | code | message_ja | FE 동작 |
