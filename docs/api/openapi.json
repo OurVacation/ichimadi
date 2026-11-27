@@ -35,6 +35,57 @@
           }
         }
       }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "로그인",
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -78,6 +129,71 @@
         "examples": [
           {
             "status": "ok"
+          }
+        ]
+      },
+      "LoginRequest": {
+        "properties": {
+          "login_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Login Id"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "login_id",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "examples": [
+          {
+            "login_id": "judge01",
+            "password": "4821"
+          }
+        ]
+      },
+      "LoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "account_id",
+          "expires_in"
+        ],
+        "title": "LoginResponse",
+        "examples": [
+          {
+            "access_token": "eyJ...",
+            "account_id": "judge01",
+            "expires_in": 259200,
+            "token_type": "bearer"
           }
         ]
       }

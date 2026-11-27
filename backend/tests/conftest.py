@@ -17,9 +17,10 @@ from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from alembic import command  # noqa: E402
+from app.core.security import create_access_token, hash_password  # noqa: E402
 from app.db import engine, get_db  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models import Phrase, PhraseSet  # noqa: E402
+from app.models import Phrase, PhraseSet, User, UserRole  # noqa: E402
 
 CONTENT = Path(__file__).resolve().parents[2] / "content"
 
@@ -86,3 +87,19 @@ def seeded(db):
             )
         )
     db.flush()
+
+
+@pytest.fixture
+def make_user(db):
+    def make(login_id="judge01", password="4821", role="judge"):
+        user = User(login_id=login_id, password_hash=hash_password(password), role=UserRole(role))
+        db.add(user)
+        db.flush()
+        return user
+
+    return make
+
+
+@pytest.fixture
+def auth_header():
+    return lambda user: {"Authorization": "Bearer " + create_access_token(user.id)}
