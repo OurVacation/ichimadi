@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Animal, NameCandidate, NameGenerator, Phrase, Profile, Stamp } from '../core/types.ts'
 import { hangulName } from '../core/names.ts'
+import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
 import { POUCH_SPOTS } from '../data/boardMap.ts'
@@ -341,6 +342,33 @@ export function Opening({ onOpened }: { onOpened: () => void }) {
   )
 }
 
+/** 한국어 어절마다 아래에 가타카나. 짝이 안 맞으면 가타카나를 한 줄로, 어절 사이를 넓게 */
+function Spoken({ ko, kana, className }: { ko: string; kana: string; className: string }) {
+  const pairs = pairWords(ko, kana)
+  if (!pairs) {
+    return (
+      <>
+        <p className={className} lang="ko">
+          {ko}
+        </p>
+        <p className="kana kana-spaced">{kana}</p>
+      </>
+    )
+  }
+  return (
+    <p className={`pairs ${className}`} lang="ko">
+      {pairs.map((p, i) => (
+        <span className="pair" key={i}>
+          <span>{p.ko}</span>
+          <span className="kana" lang="ja">
+            {p.kana}
+          </span>
+        </span>
+      ))}
+    </p>
+  )
+}
+
 export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () => void; onBack: () => void }) {
   return (
     <main className="page stack">
@@ -348,10 +376,7 @@ export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () =>
         {JA.card.back}
       </button>
       <section className="say">
-        <p className="say-ko" lang="ko">
-          {phrase.ko}
-        </p>
-        <p className="kana">{phrase.kana}</p>
+        <Spoken ko={phrase.ko} kana={phrase.kana} className="say-ko" />
         <p className="ja">{phrase.ja}</p>
         {canSpeak() && (
           <button className="speak" type="button" onClick={() => speakKorean(phrase.ko)}>
@@ -365,10 +390,7 @@ export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () =>
       </section>
       <section className="info">
         <p className="label">{JA.card.reply}</p>
-        <p className="reply-ko" lang="ko">
-          {phrase.reply}
-        </p>
-        <p className="kana">{phrase.replyKana}</p>
+        <Spoken ko={phrase.reply} kana={phrase.replyKana} className="reply-ko" />
         <p className="ja">{phrase.replyJa}</p>
       </section>
       <button className="btn btn-bottom" type="button" onClick={onSaid}>

@@ -578,6 +578,31 @@ ol {
   font-weight: 700;
 }
 
+.kana-spaced {
+  word-spacing: 0.7em;
+}
+
+/* 어절마다 한국어 위, 가타카나 아래 */
+.pairs {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.32em;
+  row-gap: 6px;
+}
+
+.pair {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pair .kana {
+  font-size: 0.85rem;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 .ja {
   color: var(--muted);
 }
