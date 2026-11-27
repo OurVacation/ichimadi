@@ -19,3 +19,18 @@ export function placePins<P extends { id: string }>(phrases: P[]): Pin<P>[] {
     .filter((phrase) => phrase.id in POUCH_SPOTS)
     .map((phrase, i) => ({ phrase, spot: POUCH_SPOTS[phrase.id], n: i + 1 }))
 }
+
+/** 지도 핀의 도장이 찍힌 자리: 복주머니 오른쪽 위에서 가로·세로 px, 기울기 deg */
+export type StampOffset = { dx: number; dy: number; rotate: number }
+
+/** 한마디 id로 정한다 (FNV-1a + 섞기). 새로고침해도 같은 자리. 가로·세로 ±6px, 기울기 -14°~+10° */
+export function stampOffset(phraseId: string): StampOffset {
+  let h = 0x811c9dc5
+  for (const ch of phraseId) h = Math.imul(h ^ ch.codePointAt(0)!, 0x01000193) >>> 0
+  // 끝 글자만 다른 id(q1, q2…)도 세 값이 모두 갈리게 섞는다 (murmur3 fmix32)
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b)
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35)
+  h = (h ^ (h >>> 16)) >>> 0
+  const unit = (shift: number) => ((h >>> shift) & 0xff) / 255
+  return { dx: Math.round(unit(0) * 12 - 6), dy: Math.round(unit(8) * 12 - 6), rotate: Math.round(unit(16) * 24 - 14) }
+}

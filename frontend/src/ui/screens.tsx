@@ -5,7 +5,7 @@ import { chosenName, hangulName } from '../core/names.ts'
 import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
-import { placePins } from '../data/boardMap.ts'
+import { placePins, stampOffset } from '../data/boardMap.ts'
 import { JA, PARTNER } from '../i18n.ts'
 import { MapArt } from './map.tsx'
 import { Pouch } from './parts.tsx'
@@ -260,6 +260,11 @@ function Progress({ stamps, phrases }: { stamps: Stamp[]; phrases: Phrase[] }) {
   )
 }
 
+function stampStyle(phraseId: string) {
+  const { dx, dy, rotate } = stampOffset(phraseId)
+  return { transform: `translate(${dx}px, ${dy}px) rotate(${rotate}deg)` }
+}
+
 export function Board({
   profile,
   stamps,
@@ -320,8 +325,8 @@ export function Board({
                 <button className={`pin-btn${got ? ' got' : ''}`} type="button" onClick={() => onOpen(p)}>
                   <Pouch />
                   {got && (
-                    <span className="pin-mark" role="img" aria-label={JA.board.done}>
-                      <Seal animal={profile.animal} name={null} decorative />
+                    <span className="pin-mark" role="img" aria-label={JA.board.done} style={stampStyle(p.id)}>
+                      <Seal animal={profile.animal} name={profile.koreanName} decorative />
                     </span>
                   )}
                   <span className="pin-label">

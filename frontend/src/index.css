@@ -517,7 +517,12 @@ ol {
 }
 
 .pin-mark .seal {
-  width: 36px;
+  width: 40px;
+}
+
+/* 도장 받은 복주머니는 흐리게 (도장은 그대로) */
+.pin-btn.got .pouch {
+  opacity: 0.5;
 }
 
 /* pouch svg */
