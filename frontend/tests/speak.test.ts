@@ -31,14 +31,14 @@ test('엔진이 없으면 지원 안 함, 읽지 않음', () => {
   assert.equal(canSpeak({}), false)
   assert.equal(speakKorean('안녕하세요', {}), false)
 })
-test('ko-KR, 속도 0.85로 읽고, 앞에 읽던 것은 멈춘다', () => {
+test('ko-KR, 속도 0.7로 읽고, 앞에 읽던 것은 멈춘다', () => {
   const f = fakeEnv()
   assert.equal(canSpeak(f.env), true)
   assert.equal(speakKorean('어떤 앱인가요?', f.env), true)
   assert.equal(f.spoken.length, 1)
   assert.equal(f.spoken[0].text, '어떤 앱인가요?')
   assert.equal(f.spoken[0].lang, 'ko-KR')
-  assert.equal(f.spoken[0].rate, 0.85)
+  assert.equal(f.spoken[0].rate, 0.7)
   assert.equal(f.cancelled, 1)
 })
 test('한국어 목소리가 있으면 그 목소리를 고른다', () => {
