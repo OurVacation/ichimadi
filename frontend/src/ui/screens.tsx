@@ -113,6 +113,8 @@ export function Setup({
   const [names, setNames] = useState<Names>({ kind: 'empty' })
   const [picked, setPicked] = useState<string | null>(null)
   const [animal, setAnimal] = useState<Animal | null>(null)
+  /** 이름을 패스하면 동물만 있는 도장. 빈 이름('')으로 저장한다 */
+  const [passName, setPassName] = useState(false)
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
 
@@ -143,7 +145,8 @@ export function Setup({
   }, [input, attempt, generateNames])
 
   const candidates = names.kind === 'ready' ? names.candidates : []
-  const koreanName = candidates.some((c) => c.name === picked) ? picked : null
+  const chosen = candidates.some((c) => c.name === picked) ? picked : null
+  const koreanName = passName ? '' : chosen
 
   async function confirm() {
     if (!animal || koreanName === null) return
@@ -168,9 +171,19 @@ export function Setup({
             maxLength={20}
             autoComplete="off"
             lang="ja"
+            disabled={passName}
           />
         </label>
-        <div className="names" aria-live="polite">
+        <button
+          className={`pass${passName ? ' is-picked' : ''}`}
+          type="button"
+          aria-pressed={passName}
+          onClick={() => setPassName((on) => !on)}
+        >
+          {JA.name.pass}
+        </button>
+        {passName && <p className="muted">{JA.name.passOn}</p>}
+        <fieldset className="names" aria-live="polite" disabled={passName}>
           {names.kind === 'waiting' && <p className="muted waiting">{JA.name.waiting}</p>}
           {names.kind === 'failed' && (
             <p className="error">
@@ -189,8 +202,8 @@ export function Setup({
                   <button
                     key={c.name}
                     type="button"
-                    className={`candidate${c.name === koreanName ? ' is-picked' : ''}`}
-                    aria-pressed={c.name === koreanName}
+                    className={`candidate${c.name === chosen ? ' is-picked' : ''}`}
+                    aria-pressed={c.name === chosen}
                     onClick={() => setPicked(c.name)}
                   >
                     <b lang="ko">{c.name}</b>
@@ -200,7 +213,7 @@ export function Setup({
               </div>
             </>
           )}
-        </div>
+        </fieldset>
       </section>
       <section className="stack-sm">
         <p className="label">{JA.animal.title}</p>

@@ -249,12 +249,43 @@ ol {
   color: var(--red-deep);
 }
 
+.pass {
+  justify-self: start;
+  min-height: 44px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 6px 16px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pass.is-picked {
+  border-color: var(--red);
+  background: var(--red-soft);
+  color: var(--red-deep);
+}
+
+.field input:disabled {
+  background: var(--paper);
+  color: var(--muted);
+}
+
 /* 후보가 나타나도 아래 동물 칸이 덜 밀리게 자리를 잡아 둔다 */
 .names {
   min-height: 92px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  min-width: 0;
   display: grid;
   align-content: start;
   gap: 8px;
+}
+
+.names:disabled {
+  opacity: 0.4;
 }
 
 .names .link {

@@ -21,6 +21,7 @@ export type Phrase = {
 /** 처음 로그인할 때 설정 화면 하나에서 같이 정한다. 둘 다 정해야 한마디판으로 간다. */
 export type Profile = {
   animal: Animal | null
+  /** null은 아직 안 정함, ''는 이름을 패스함 (동물만 있는 도장) */
   koreanName: string | null
 }
 

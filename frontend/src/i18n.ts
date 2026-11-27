@@ -33,6 +33,8 @@ export const JA = {
     noteReading: 'お名前の韓国語読み',
     notePopular: '韓国でよくある名前',
     noteAsIs: '入れた名前のまま',
+    pass: '名前をパスする',
+    passOn: '名前なしで、動物だけのハンコになります',
   },
   animal: {
     title: 'ハンコの動物',

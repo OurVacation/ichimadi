@@ -22,11 +22,22 @@ test('동물이나 이름 중 하나라도 없으면 설정 화면 (이름과 �
 test('둘 다 있으면 바로 한마디판', () => {
   assert.equal(firstScreen({ animal: 'bear', koreanName: '양자' }), 'board')
 })
+test('이름을 패스하면(빈 이름) 동물만으로 한마디판', () => {
+  assert.equal(firstScreen({ animal: 'bear', koreanName: '' }), 'board')
+  assert.equal(firstScreen({ animal: null, koreanName: '' }), 'setup')
+})
 
 test('로그인: 틀리면 거절, 맞으면 처음 화면, 설정 뒤 다시 로그인하면 바로 한마디판', async () => {
   const store = createLocalStore(memoryStorage(), [{ id: 'judge01', password: '1111' }])
   assert.equal(await signIn(store, 'judge01', '0000'), null)
   assert.deepEqual(await signIn(store, 'judge01', '1111'), { accountId: 'judge01', screen: 'setup' })
   await store.saveProfile('judge01', { animal: 'tiger', koreanName: '양자' })
+  assert.deepEqual(await signIn(store, 'judge01', '1111'), { accountId: 'judge01', screen: 'board' })
+})
+
+test('이름을 패스한 설정도 저장되고, 다시 로그인하면 바로 한마디판', async () => {
+  const store = createLocalStore(memoryStorage(), [{ id: 'judge01', password: '1111' }])
+  await store.saveProfile('judge01', { animal: 'rabbit', koreanName: '' })
+  assert.deepEqual(await store.getProfile('judge01'), { animal: 'rabbit', koreanName: '' })
   assert.deepEqual(await signIn(store, 'judge01', '1111'), { accountId: 'judge01', screen: 'board' })
 })
