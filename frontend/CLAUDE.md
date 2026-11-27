@@ -39,6 +39,17 @@ npm test                     # 로직 테스트
 npm run build                # 타입 검사 + 배포용 빌드 (dist/)
 ```
 
+### QR 카드
+
+```bash
+npm run qr -- --base-url https://<배포 주소>            # .env.local의 VITE_TRIAL_ACCOUNTS로 만든다
+npm run qr -- --base-url <url> --accounts-file <path>   # 같은 형식(id:password,…)의 파일로 만든다
+```
+
+- 결과는 `qr-cards/`에 계정마다 PNG 하나와 인쇄용 `cards.html`(A4 한 장에 2×4)로 나온다. 실행할 때마다 폴더를 새로 만든다.
+- QR 내용은 `<base-url>/#login=<id>.<password>`(각각 `encodeURIComponent`)이다. 앱의 QR 자동 로그인이 이 해시를 읽는다.
+- `qr-cards/`에는 비밀번호가 들어 있다. `.gitignore`에 있으니 커밋하지 않는다.
+
 ## 구조
 
 - `src/core/`: 로직 (저장 연결 `store.ts`, 로그인 흐름 `session.ts`, 이름 후보 `names.ts`, 도장첩 `stamps.ts`, 듣기 `speak.ts`). 화면 코드 없음
