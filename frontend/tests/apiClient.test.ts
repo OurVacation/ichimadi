@@ -191,6 +191,18 @@ test('토큰을 보낸 요청이 401이면 토큰을 지우고 알린다. 새로
   assert.equal(createApiClient({ fetch: server().fetch, storage }).accountId(), null)
 })
 
+test('login: 요청 전에 이전 로그인을 지운다. 실패(틀림·통신)해도 이전 계정으로 돌아가지 않는다', async () => {
+  for (const reply of [() => [401, { code: 'invalid_credentials', message_ja: 'IDかパスワードが違います' }], () => 'offline'] as const) {
+    const storage = memoryStorage()
+    storage.setItem('ichimadi:auth', JSON.stringify({ token: 'tok-a', accountId: 'a01' }))
+    const f = fakeFetch(reply as () => [number, unknown] | 'offline')
+    const client = createApiClient({ fetch: f.fetch, storage })
+    await createApiStore(client).login('b01', '1234').catch(() => null)
+    assert.equal(client.accountId(), null)
+    assert.equal(createApiClient({ fetch: f.fetch, storage }).accountId(), null)
+  }
+})
+
 test('로그인 실패(401)는 로그인 끊김 알림을 부르지 않는다', async () => {
   const client = createApiClient({ fetch: server().fetch, storage: memoryStorage() })
   let notified = 0
