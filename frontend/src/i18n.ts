@@ -30,6 +30,8 @@ export const JA = {
     lead: '通じたときに押す、あなたのハンコです',
     preview: 'あなたのハンコ',
     confirm: 'このハンコに決める',
+    needName: '名前の候補を選ぶか、「名前をパスする」を押してください',
+    needAnimal: 'ハンコの動物を選んでください',
   },
   name: {
     title: '韓国式の名前',

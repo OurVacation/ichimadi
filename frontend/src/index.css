@@ -142,12 +142,26 @@ ol {
   font-size: 1.05rem;
 }
 
+.btn:disabled {
+  opacity: 1;
+  background: #d9d4ca;
+  color: var(--ink);
+}
+
 .btn.wide {
   align-self: stretch;
 }
 
 .btn-bottom {
   margin-top: auto;
+}
+
+.setup-missing {
+  display: grid;
+  gap: 2px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--indigo);
 }
 
 .link {

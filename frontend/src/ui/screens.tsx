@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Animal, NameCandidate, NameGenerator, Phrase, Profile, Stamp } from '../core/types.ts'
 import { errorMessage } from '../api/client.ts'
-import { hangulName } from '../core/names.ts'
+import { chosenName, hangulName } from '../core/names.ts'
 import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
@@ -135,8 +135,10 @@ export function Setup({
   }, [input, attempt, generateNames])
 
   const candidates = names.kind === 'ready' ? names.candidates : []
-  const chosen = candidates.some((c) => c.name === picked) ? picked : null
+  const chosen = chosenName(candidates, picked)
   const koreanName = passName ? '' : chosen
+  /** 결정 버튼이 왜 꺼져 있는지. 남은 단계만 */
+  const missing = [koreanName === null && JA.setup.needName, !animal && JA.setup.needAnimal].filter((m) => m !== false)
 
   async function confirm() {
     if (!animal || koreanName === null) return
@@ -233,14 +235,18 @@ export function Setup({
           {failed}
         </p>
       )}
-      <button
-        className="btn btn-bottom"
-        type="button"
-        disabled={!animal || koreanName === null || busy}
-        onClick={confirm}
-      >
-        {JA.setup.confirm}
-      </button>
+      <div className="btn-bottom stack-sm">
+        {missing.length > 0 && (
+          <p className="setup-missing" aria-live="polite">
+            {missing.map((m) => (
+              <span key={m}>{m}</span>
+            ))}
+          </p>
+        )}
+        <button className="btn" type="button" disabled={missing.length > 0 || busy} onClick={confirm}>
+          {JA.setup.confirm}
+        </button>
+      </div>
     </main>
   )
 }
