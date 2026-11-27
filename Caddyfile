@@ -1,0 +1,26 @@
+# 사이트 주소: 서버 .env 의 SITE_ADDRESS (기본값 34-47-91-94.sslip.io)
+# Caddy가 이 주소로 HTTPS 인증서를 자동으로 발급·갱신한다. VM 방화벽에서 80, 443이 열려 있어야 한다.
+# 화면과 API가 같은 주소를 쓰므로 CORS 설정이 필요 없다.
+{$SITE_ADDRESS:34-47-91-94.sslip.io} {
+	encode zstd gzip
+
+	# API → FastAPI
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	# 빌드 결과물(파일명에 해시가 붙음)은 1년 동안 캐시
+	handle /assets/* {
+		root * /srv
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# 그 외 → 프론트 화면. 없는 경로는 index.html을 돌려줘서 새로고침해도 404가 나지 않는다 (SPA fallback)
+	handle {
+		root * /srv
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

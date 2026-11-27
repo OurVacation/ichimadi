@@ -1,0 +1,9 @@
+# deploy/web.Dockerfile 전용. 프론트 빌드에 필요한 frontend/ 와 content/ 만 넣는다.
+*
+!frontend/
+!content/
+frontend/node_modules
+frontend/dist
+frontend/qr-cards
+frontend/.env*
+frontend/*.local
