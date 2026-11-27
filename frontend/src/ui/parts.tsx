@@ -1,17 +1,3 @@
-import type { CSSProperties } from 'react'
-import type { Animal } from '../core/types.ts'
-
-export const ANIMALS: { id: Animal; emoji: string }[] = [
-  { id: 'tiger', emoji: '🐯' },
-  { id: 'rabbit', emoji: '🐰' },
-  { id: 'magpie', emoji: '🐦' },
-  { id: 'bear', emoji: '🐻' },
-]
-
-export function emojiOf(animal: Animal | null): string {
-  return ANIMALS.find((a) => a.id === animal)?.emoji ?? ''
-}
-
 /** 복주머니. 뚜껑(p-lid)은 열기 화면에서 CSS로 들어 올린다. */
 export function Pouch({ className = '' }: { className?: string }) {
   return (
@@ -27,34 +13,5 @@ export function Pouch({ className = '' }: { className?: string }) {
         <path className="p-line" d="M60 55 q-10 14 -16 24 M60 55 q10 14 16 24" />
       </g>
     </svg>
-  )
-}
-
-/** 내 도장: 동물 + 한국식 이름 (+ 받은 시각) */
-export function Seal({
-  animal,
-  name,
-  time,
-  size = 'small',
-  stampIn = false,
-}: {
-  animal: Animal | null
-  name: string | null
-  time?: string
-  size?: 'small' | 'big'
-  stampIn?: boolean
-}) {
-  return (
-    <div className={`seal seal-${size}${stampIn ? ' stamp-in' : ''}`}>
-      <span className="seal-animal" aria-hidden="true">
-        {emojiOf(animal)}
-      </span>
-      {name && (
-        <b lang="ko" className="seal-name" style={{ '--chars': [...name].length } as CSSProperties}>
-          {name}
-        </b>
-      )}
-      {time && <small className="seal-time">{time}</small>}
-    </div>
   )
 }

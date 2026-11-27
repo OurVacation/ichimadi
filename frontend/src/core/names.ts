@@ -50,6 +50,12 @@ const parts = (syllable: string) => {
 const compose = (initial: number, medial: number, final: number) =>
   String.fromCharCode(HANGUL_BASE + initial * 588 + medial * 28 + final)
 
+/** 한글로 넣은 이름(1~10음절, 띄어쓰기는 뺌)은 그대로 쓴다. 한국인 팀원이 시험할 때 막히지 않게 */
+export function hangulName(input: string): string | null {
+  const name = input.normalize('NFKC').replace(/\s+/g, '')
+  return /^[가-힣]{1,10}$/.test(name) ? name : null
+}
+
 export function koreanNameCandidates(input: string): string[] {
   const given = input.normalize('NFKC').trim().split(/\s+/).pop() ?? ''
   const syllables = readName(given)

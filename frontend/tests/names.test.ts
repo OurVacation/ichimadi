@@ -1,7 +1,7 @@
 // W-04 (H-03): 한국식 이름 후보 (임시 규칙 A-03)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { koreanNameCandidates } from '../src/core/names.ts'
+import { hangulName, koreanNameCandidates } from '../src/core/names.ts'
 
 test('한자 이름: 후보 3개, 한국 한자음 읽기가 들어 있다', () => {
   const c = koreanNameCandidates('陽子')
@@ -43,4 +43,13 @@ test('신자체 한자도 구자체 읽기로 후보 3개 (桜=櫻 앵, 辺=邊 
 test('반각 가타카나와 호환 한자도 읽는다 (NFKC)', () => {
   assert.ok(koreanNameCandidates('ﾖｳｺ').includes('요코'))
   assert.equal(koreanNameCandidates('神').length, 3)
+})
+
+test('한글 이름은 1~10음절이면 그대로 쓴다 (띄어쓰기는 뺀다)', () => {
+  assert.equal(hangulName('김철수'), '김철수')
+  assert.equal(hangulName(' 김 철수 '), '김철수')
+  assert.equal(hangulName('가나다라마바사아자차'), '가나다라마바사아자차')
+})
+test('한글이 아니거나 11음절 이상이면 그대로 쓰지 않는다', () => {
+  for (const input of ['', 'abc', '123', '陽子', '김abc', '가나다라마바사아자차카']) assert.equal(hangulName(input), null, input)
 })

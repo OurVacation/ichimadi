@@ -18,7 +18,7 @@ export function speakKorean(text: string, env: SpeechEnv = browser): boolean {
   speechSynthesis.cancel()
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.lang = 'ko-KR'
-  utterance.rate = 0.85
+  utterance.rate = 0.7
   const voice = speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().startsWith('ko'))
   if (voice) utterance.voice = voice
   speechSynthesis.speak(utterance)

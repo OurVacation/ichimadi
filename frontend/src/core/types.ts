@@ -5,6 +5,8 @@ export type Animal = 'tiger' | 'rabbit' | 'magpie' | 'bear'
 /** 행사장 한마디 하나. 문장이 확정되면 data/phrases.ts만 바꾼다. */
 export type Phrase = {
   id: string
+  /** 지도 핀에 붙는 짧은 이름표 (일본어) */
+  label: string
   ko: string
   kana: string
   ja: string
@@ -16,9 +18,10 @@ export type Phrase = {
   replyJa: string
 }
 
-/** 처음 로그인할 때 정하는 것. 둘 다 정해야 한마디판으로 간다. */
+/** 처음 로그인할 때 설정 화면 하나에서 같이 정한다. 둘 다 정해야 한마디판으로 간다. */
 export type Profile = {
   animal: Animal | null
+  /** null은 아직 안 정함, ''는 이름을 패스함 (동물만 있는 도장) */
   koreanName: string | null
 }
 
@@ -43,5 +46,14 @@ export interface Store {
   addStamp(accountId: string, phraseId: string, at?: Date): Promise<Stamp[]>
 }
 
+/** 한국식 이름 후보 하나. note는 왜 이 이름인지 (일본어, 없어도 된다) */
+export type NameCandidate = { name: string; note?: string }
+
+/**
+ * 이름 짓기를 끼우는 자리. 일본 이름 전체(성+이름)를 받아 후보를 돌려준다.
+ * 지금은 임시 규칙(core/nameGenerator.ts), 팀원의 AI가 오면 main.tsx에서 이것만 바꿔 끼운다.
+ */
+export type NameGenerator = (fullName: string) => Promise<NameCandidate[]>
+
 /** 로그인 직후 갈 화면 */
-export type FirstScreen = 'animal' | 'name' | 'board'
+export type FirstScreen = 'setup' | 'board'

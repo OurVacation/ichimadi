@@ -1,31 +1,45 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { Animal, Phrase, Profile, Stamp } from '../core/types.ts'
-import { koreanNameCandidates } from '../core/names.ts'
+import type { Animal, NameCandidate, NameGenerator, Phrase, Profile, Stamp } from '../core/types.ts'
+import { hangulName } from '../core/names.ts'
+import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
+import { POUCH_SPOTS } from '../data/boardMap.ts'
 import { PHRASES } from '../data/phrases.ts'
 import { JA, PARTNER } from '../i18n.ts'
-import { ANIMALS, Pouch, Seal } from './parts.tsx'
+import { MapArt } from './map.tsx'
+import { Pouch } from './parts.tsx'
+import { ANIMALS, Seal } from './stamps.tsx'
 
 /** 저장 결과. 실패하면 화면이 다시 누르게 한다. */
 type Result = Promise<boolean>
 
 const stampOf = (stamps: Stamp[], phraseId: string) => stamps.find((s) => s.phraseId === phraseId)
 
-export function Login({ onSubmit }: { onSubmit: (id: string, password: string) => Promise<'ok' | 'failed' | 'error'> }) {
+/** 로그인 화면 아래 알림. checking은 QR로 로그인하는 동안 */
+export type LoginNotice = 'none' | 'checking' | 'failed' | 'error' | 'qrBroken'
+const NOTICE_TEXT = { failed: JA.login.failed, error: JA.error, qrBroken: JA.login.qrBroken }
+
+export function Login({
+  onSubmit,
+  notice = 'none',
+}: {
+  onSubmit: (id: string, password: string) => Promise<'ok' | 'failed' | 'error'>
+  notice?: LoginNotice
+}) {
   const [id, setId] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState('')
+  const [own, setOwn] = useState<LoginNotice | null>(null)
+  const shown = own ?? notice
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
-    setMessage('')
+    setOwn('none')
     const r = await onSubmit(id.trim(), password)
     setBusy(false)
-    if (r === 'failed') setMessage(JA.login.failed)
-    if (r === 'error') setMessage(JA.error)
+    setOwn(r === 'ok' ? 'none' : r)
   }
 
   return (
@@ -63,12 +77,17 @@ export function Login({ onSubmit }: { onSubmit: (id: string, password: string) =
             required
           />
         </label>
-        {message && (
-          <p className="error" role="alert">
-            {message}
+        {shown === 'checking' && (
+          <p className="muted" aria-live="polite">
+            {JA.login.busy}
           </p>
         )}
-        <button className="btn" type="submit" disabled={busy}>
+        {shown !== 'none' && shown !== 'checking' && (
+          <p className="error" role="alert">
+            {NOTICE_TEXT[shown]}
+          </p>
+        )}
+        <button className="btn" type="submit" disabled={busy || shown === 'checking'}>
           {busy ? JA.login.busy : JA.login.submit}
         </button>
       </form>
@@ -76,104 +95,148 @@ export function Login({ onSubmit }: { onSubmit: (id: string, password: string) =
   )
 }
 
-export function AnimalPick({ onPick }: { onPick: (a: Animal) => Result }) {
-  const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
-  async function pick(a: Animal) {
-    setBusy(true)
-    const ok = await onPick(a)
-    setBusy(false)
-    setFailed(!ok)
-  }
-  return (
-    <main className="page stack">
-      <h2>{JA.animal.title}</h2>
-      <p className="muted">{JA.animal.lead}</p>
-      <div className="animal-grid">
-        {ANIMALS.map((a) => (
-          <button key={a.id} className="animal" type="button" disabled={busy} onClick={() => pick(a.id)}>
-            <span className="animal-emoji" aria-hidden="true">
-              {a.emoji}
-            </span>
-            <span>{JA.animal[a.id]}</span>
-          </button>
-        ))}
-      </div>
-      {failed && (
-        <p className="error" role="alert">
-          {JA.error}
-        </p>
-      )}
-    </main>
-  )
-}
+/** 입력을 멈추고 이만큼 지나면 이름을 요청한다 */
+const NAME_DEBOUNCE_MS = 500
 
-export function NamePick({
-  animal,
+type Names =
+  { kind: 'empty' } | { kind: 'waiting' } | { kind: 'ready'; candidates: NameCandidate[] } | { kind: 'failed' }
+
+/** 처음 설정: 위에 이름, 아래에 동물. 이름을 기다리는 동안 동물을 고를 수 있다. 결정은 둘 다 정한 뒤 한 번 */
+export function Setup({
+  generateNames,
   onConfirm,
-  onBack,
 }: {
-  animal: Animal | null
-  onConfirm: (name: string) => Result
-  onBack: () => void
+  generateNames: NameGenerator
+  onConfirm: (profile: { animal: Animal; koreanName: string }) => Result
 }) {
   const [input, setInput] = useState('')
+  const [attempt, setAttempt] = useState(0)
+  const [names, setNames] = useState<Names>({ kind: 'empty' })
   const [picked, setPicked] = useState<string | null>(null)
+  const [animal, setAnimal] = useState<Animal | null>(null)
+  /** 이름을 패스하면 동물만 있는 도장. 빈 이름('')으로 저장한다 */
+  const [passName, setPassName] = useState(false)
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
-  const candidates = koreanNameCandidates(input)
-  const chosen = picked && candidates.includes(picked) ? picked : null
+
+  useEffect(() => {
+    const fullName = input.trim()
+    if (!fullName) {
+      setNames({ kind: 'empty' })
+      return
+    }
+    const asIs = hangulName(fullName)
+    if (asIs) {
+      setNames({ kind: 'ready', candidates: [{ name: asIs, note: JA.name.noteAsIs }] })
+      return
+    }
+    // 입력이 바뀌면 앞 요청의 답은 버린다
+    let live = true
+    setNames({ kind: 'waiting' })
+    const timer = setTimeout(() => {
+      generateNames(fullName).then(
+        (candidates) => live && setNames({ kind: 'ready', candidates }),
+        () => live && setNames({ kind: 'failed' }),
+      )
+    }, NAME_DEBOUNCE_MS)
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
+  }, [input, attempt, generateNames])
+
+  const candidates = names.kind === 'ready' ? names.candidates : []
+  const chosen = candidates.some((c) => c.name === picked) ? picked : null
+  const koreanName = passName ? '' : chosen
 
   async function confirm() {
-    if (!chosen) return
+    if (!animal || koreanName === null) return
     setBusy(true)
-    const ok = await onConfirm(chosen)
+    const ok = await onConfirm({ animal, koreanName })
     setBusy(false)
     setFailed(!ok)
   }
 
   return (
     <main className="page stack">
-      <button className="link back" type="button" onClick={onBack}>
-        ← {JA.name.back}
-      </button>
-      <h2>{JA.name.title}</h2>
-      <label className="field">
-        <span>{JA.name.lead}</span>
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={JA.name.placeholder}
-          aria-label={JA.name.label}
-          maxLength={10}
-          autoComplete="off"
-          lang="ja"
-        />
-      </label>
-      {input.trim() && candidates.length === 0 && <p className="muted">{JA.name.unreadable}</p>}
-      {candidates.length > 0 && (
-        <div className="stack-sm">
-          <p className="label">{JA.name.candidates}</p>
-          <div className="candidates">
-            {candidates.map((c) => (
-              <button
-                key={c}
-                type="button"
-                lang="ko"
-                className={`candidate${c === chosen ? ' is-picked' : ''}`}
-                aria-pressed={c === chosen}
-                onClick={() => setPicked(c)}
-              >
-                {c}
+      <h2>{JA.setup.title}</h2>
+      <p className="muted">{JA.setup.lead}</p>
+      <section className="stack-sm">
+        <label className="field">
+          <span>{JA.name.lead}</span>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={JA.name.placeholder}
+            aria-label={JA.name.label}
+            maxLength={20}
+            autoComplete="off"
+            lang="ja"
+            disabled={passName}
+          />
+        </label>
+        <button
+          className={`pass${passName ? ' is-picked' : ''}`}
+          type="button"
+          aria-pressed={passName}
+          onClick={() => setPassName((on) => !on)}
+        >
+          {JA.name.pass}
+        </button>
+        {passName && <p className="muted">{JA.name.passOn}</p>}
+        <fieldset className="names" aria-live="polite" disabled={passName}>
+          {names.kind === 'waiting' && <p className="muted waiting">{JA.name.waiting}</p>}
+          {names.kind === 'failed' && (
+            <p className="error">
+              {JA.name.failed}{' '}
+              <button className="link" type="button" onClick={() => setAttempt((n) => n + 1)}>
+                {JA.name.retry}
               </button>
-            ))}
-          </div>
+            </p>
+          )}
+          {names.kind === 'ready' && candidates.length === 0 && <p className="error">{JA.name.unreadable}</p>}
+          {candidates.length > 0 && (
+            <>
+              <p className="label">{JA.name.candidates}</p>
+              <div className="candidates">
+                {candidates.map((c) => (
+                  <button
+                    key={c.name}
+                    type="button"
+                    className={`candidate${c.name === chosen ? ' is-picked' : ''}`}
+                    aria-pressed={c.name === chosen}
+                    onClick={() => setPicked(c.name)}
+                  >
+                    <b lang="ko">{c.name}</b>
+                    {c.note && <small>{c.note}</small>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </fieldset>
+      </section>
+      <section className="stack-sm">
+        <p className="label">{JA.animal.title}</p>
+        <div className="animal-grid">
+          {ANIMALS.map((a) => (
+            <button
+              key={a}
+              className={`animal${a === animal ? ' is-picked' : ''}`}
+              type="button"
+              aria-pressed={a === animal}
+              onClick={() => setAnimal(a)}
+            >
+              <Seal animal={a} name={null} decorative />
+              <span>{JA.animal[a]}</span>
+            </button>
+          ))}
         </div>
-      )}
-      {chosen && (
+      </section>
+      {animal && (
         <div className="preview">
-          <p className="label">{JA.name.preview}</p>
-          <Seal animal={animal} name={chosen} size="big" />
+          <p className="label">{JA.setup.preview}</p>
+          <Seal animal={animal} name={koreanName} size="big" />
         </div>
       )}
       {failed && (
@@ -181,8 +244,13 @@ export function NamePick({
           {JA.error}
         </p>
       )}
-      <button className="btn" type="button" disabled={!chosen || busy} onClick={confirm}>
-        {JA.name.confirm}
+      <button
+        className="btn btn-bottom"
+        type="button"
+        disabled={!animal || koreanName === null || busy}
+        onClick={confirm}
+      >
+        {JA.setup.confirm}
       </button>
     </main>
   )
@@ -228,25 +296,30 @@ export function Board({
         </div>
       </div>
       <p className="hint">{JA.board.hint}</p>
-      <ol className="pouch-grid">
-        {PHRASES.map((p, i) => {
-          const got = !!stampOf(stamps, p.id)
-          return (
-            <li key={p.id}>
-              <button className={`pouch-btn${got ? ' got' : ''}`} type="button" onClick={() => onOpen(p)}>
-                <span className="pouch-num">{i + 1}</span>
-                <Pouch />
-                {got && (
-                  <span className="pouch-mark" role="img" aria-label={JA.board.done}>
-                    <Seal animal={profile.animal} name={null} />
+      <div className="map">
+        <MapArt />
+        <ol className="map-pins">
+          {PHRASES.map((p, i) => {
+            const got = !!stampOf(stamps, p.id)
+            const spot = POUCH_SPOTS[p.id]
+            return (
+              <li key={p.id} className="pin" style={{ left: `${spot.x}%`, top: `${spot.y}%` }}>
+                <button className={`pin-btn${got ? ' got' : ''}`} type="button" onClick={() => onOpen(p)}>
+                  <Pouch />
+                  {got && (
+                    <span className="pin-mark" role="img" aria-label={JA.board.done}>
+                      <Seal animal={profile.animal} name={null} decorative />
+                    </span>
+                  )}
+                  <span className="pin-label">
+                    <b>{i + 1}</b> {p.label}
                   </span>
-                )}
-                <span className="pouch-when">{p.when}</span>
-              </button>
-            </li>
-          )
-        })}
-      </ol>
+                </button>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
     </main>
   )
 }
@@ -269,6 +342,33 @@ export function Opening({ onOpened }: { onOpened: () => void }) {
   )
 }
 
+/** 한국어 어절마다 아래에 가타카나. 짝이 안 맞으면 가타카나를 한 줄로, 어절 사이를 넓게 */
+function Spoken({ ko, kana, className }: { ko: string; kana: string; className: string }) {
+  const pairs = pairWords(ko, kana)
+  if (!pairs) {
+    return (
+      <>
+        <p className={className} lang="ko">
+          {ko}
+        </p>
+        <p className="kana kana-spaced">{kana}</p>
+      </>
+    )
+  }
+  return (
+    <p className={`pairs ${className}`} lang="ko">
+      {pairs.map((p, i) => (
+        <span className="pair" key={i}>
+          <span>{p.ko}</span>
+          <span className="kana" lang="ja">
+            {p.kana}
+          </span>
+        </span>
+      ))}
+    </p>
+  )
+}
+
 export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () => void; onBack: () => void }) {
   return (
     <main className="page stack">
@@ -276,10 +376,7 @@ export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () =>
         {JA.card.back}
       </button>
       <section className="say">
-        <p className="say-ko" lang="ko">
-          {phrase.ko}
-        </p>
-        <p className="kana">{phrase.kana}</p>
+        <Spoken ko={phrase.ko} kana={phrase.kana} className="say-ko" />
         <p className="ja">{phrase.ja}</p>
         {canSpeak() && (
           <button className="speak" type="button" onClick={() => speakKorean(phrase.ko)}>
@@ -293,10 +390,7 @@ export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () =>
       </section>
       <section className="info">
         <p className="label">{JA.card.reply}</p>
-        <p className="reply-ko" lang="ko">
-          {phrase.reply}
-        </p>
-        <p className="kana">{phrase.replyKana}</p>
+        <Spoken ko={phrase.reply} kana={phrase.replyKana} className="reply-ko" />
         <p className="ja">{phrase.replyJa}</p>
       </section>
       <button className="btn btn-bottom" type="button" onClick={onSaid}>
@@ -356,7 +450,13 @@ export function Stamped({
   const stamp = stampOf(stamps, phrase.id)
   return (
     <main className="page center stack">
-      <Seal animal={profile.animal} name={profile.koreanName} time={stamp && formatStampTime(stamp.at)} size="big" stampIn />
+      <Seal
+        animal={profile.animal}
+        name={profile.koreanName}
+        time={stamp && formatStampTime(stamp.at)}
+        size="big"
+        stampIn
+      />
       <h2 className="done-title">{JA.stamped.title}</h2>
       <p className="ja">{phrase.ja}</p>
       <Progress stamps={stamps} />
@@ -428,7 +528,11 @@ export function Book({
           const s = stampOf(stamps, ph.id)
           return (
             <li key={ph.id} className={`slot${s ? ' got' : ''}`}>
-              {s ? <Seal animal={profile.animal} name={profile.koreanName} /> : <span className="slot-empty">{JA.book.empty}</span>}
+              {s ? (
+                <Seal animal={profile.animal} name={profile.koreanName} />
+              ) : (
+                <span className="slot-empty">{JA.book.empty}</span>
+              )}
               <span className="slot-ja">{ph.ja}</span>
               {s && <span className="slot-time">{formatStampTime(s.at)}</span>}
             </li>

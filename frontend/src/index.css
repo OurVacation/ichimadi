@@ -216,61 +216,119 @@ ol {
   outline: none;
 }
 
-/* animal */
+/* setup */
 .animal-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.animal {
-  min-height: 132px;
-  border: 2px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  display: grid;
-  place-items: center;
-  gap: 4px;
-  padding: 12px;
-  font-weight: 700;
-}
-
-.animal:active {
-  border-color: var(--red);
-}
-
-.animal-emoji {
-  font-size: 3.4rem;
-  line-height: 1;
-}
-
-/* name */
-.candidates {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
-.candidate {
-  min-height: 56px;
+.animal {
+  min-height: 96px;
+  min-width: 0;
   border: 2px solid var(--line);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--surface);
-  font-size: 1.3rem;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 8px 4px;
   font-weight: 700;
+  font-size: 0.85rem;
 }
 
+.animal .seal {
+  width: 52px;
+}
+
+.animal.is-picked,
 .candidate.is-picked {
   border-color: var(--red);
   background: var(--red-soft);
   color: var(--red-deep);
 }
 
+.pass {
+  justify-self: start;
+  min-height: 44px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 6px 16px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pass.is-picked {
+  border-color: var(--red);
+  background: var(--red-soft);
+  color: var(--red-deep);
+}
+
+.field input:disabled {
+  background: var(--paper);
+  color: var(--muted);
+}
+
+/* 후보가 나타나도 아래 동물 칸이 덜 밀리게 자리를 잡아 둔다 */
+.names {
+  min-height: 84px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.names:disabled {
+  opacity: 0.4;
+}
+
+.names .link {
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--red-deep);
+}
+
+.candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.candidate {
+  min-height: 64px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  padding: 6px 4px;
+}
+
+.candidate b {
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+
+.candidate small {
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
 .preview {
   display: grid;
   justify-items: center;
-  gap: 10px;
-  padding: 8px 0;
+  gap: 6px;
+}
+
+.preview .seal {
+  width: 124px;
 }
 
 /* board */
@@ -318,53 +376,118 @@ ol {
   padding: 10px 12px;
 }
 
-.pouch-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.pouch-btn {
+.map {
+  --map-ground: #efe8d7;
+  --map-park: #dde6cb;
+  --map-tree: #c4d4ab;
+  --map-water: #d5e1ee;
+  --map-building: #e3dac6;
   position: relative;
   width: 100%;
-  min-height: 168px;
+  aspect-ratio: 3 / 4;
   border: 1.5px solid var(--line);
   border-radius: 18px;
+  overflow: hidden;
+  background: var(--map-ground);
+}
+
+.map-art,
+.map-pins {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.m-ground {
+  fill: var(--map-ground);
+}
+.m-park {
+  fill: var(--map-park);
+}
+.m-tree {
+  fill: var(--map-tree);
+}
+.m-water {
+  fill: var(--map-water);
+}
+.m-building {
+  fill: var(--map-building);
+}
+.m-road-edge,
+.m-road,
+.m-route {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+.m-road-edge {
+  stroke: var(--line);
+  stroke-width: 18px;
+}
+.m-road {
+  stroke: var(--surface);
+  stroke-width: 14px;
+}
+.m-route {
+  stroke: var(--red);
+  stroke-width: 2.5px;
+  stroke-dasharray: 2 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+}
+
+.pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.pin-btn {
+  position: relative;
+  min-width: 64px;
+  min-height: 64px;
+  border: 0;
+  background: none;
+  padding: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.pin-btn .pouch {
+  width: 50px;
+  filter: drop-shadow(0 3px 2px rgba(27, 34, 51, 0.2));
+}
+
+.pin-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--ink);
   background: var(--surface);
-  padding: 12px 8px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 9px;
 }
 
-.pouch-btn.got {
-  border-color: var(--red-soft);
+.pin-label b {
+  color: var(--red);
+}
+
+.pin-btn.got .pin-label {
   background: var(--red-soft);
+  border-color: var(--red-soft);
 }
 
-.pouch-num {
+.pin-mark {
   position: absolute;
-  top: 8px;
-  left: 12px;
-  font-weight: 900;
-  color: var(--indigo);
+  top: -6px;
+  right: -8px;
 }
 
-.pouch-when {
-  font-size: 0.8rem;
-  line-height: 1.35;
-  color: var(--muted);
-}
-
-.pouch-mark {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-}
-
-.pouch-mark .seal {
-  width: 44px;
+.pin-mark .seal {
+  width: 36px;
 }
 
 /* pouch svg */
@@ -453,6 +576,31 @@ ol {
 .kana {
   color: var(--red);
   font-weight: 700;
+}
+
+.kana-spaced {
+  word-spacing: 0.7em;
+}
+
+/* 어절마다 한국어 위, 가타카나 아래 */
+.pairs {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.32em;
+  row-gap: 6px;
+}
+
+.pair {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pair .kana {
+  font-size: 0.85rem;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .ja {
@@ -569,63 +717,65 @@ ol {
   font-weight: 700;
 }
 
-/* seal (도장) */
+/* seal (도장): 동물 모양 실루엣을 인주색으로, 이름은 종이색으로 비운다 */
 .seal {
-  --name-size: 0.95rem;
-  container-type: inline-size;
   width: 76px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 3px solid var(--red);
-  box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 5px var(--red);
-  background: var(--surface);
-  color: var(--red);
-  display: grid;
-  place-content: center;
+  display: inline-grid;
   justify-items: center;
-  text-align: center;
-  transform: rotate(-10deg);
-  line-height: 1.1;
+  gap: 2px;
   flex: none;
+  color: var(--red);
 }
 
-.seal-animal {
-  font-size: 1.5rem;
-  line-height: 1;
+.seal svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  transform: rotate(-8deg);
+}
+
+.seal-ink {
+  fill: var(--red);
+  opacity: 0.94;
+}
+
+.seal-leg {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+.seal-paper {
+  fill: var(--surface);
+}
+
+.seal-paper .seal-dot {
+  fill: var(--red);
+}
+
+.seal-cut {
+  fill: none;
+  stroke: var(--surface);
+  stroke-width: 3.2;
+  stroke-linecap: round;
 }
 
 .seal-name {
-  font-size: var(--name-size);
+  fill: var(--surface);
+  font-family: var(--f-ko);
   font-weight: 900;
-  white-space: nowrap;
-}
-
-/* 이름이 길면 도장 안에 들어가게 줄인다 (한글 한 글자 = 1em, 도장 폭의 72%까지) */
-@supports (font-size: 1cqi) {
-  .seal-name {
-    font-size: min(var(--name-size), calc(72cqi / var(--chars, 1)));
-  }
 }
 
 .seal-time {
-  font-size: 0.6rem;
+  font-size: 0.85rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .seal-big {
-  --name-size: 1.8rem;
   width: 160px;
-  border-width: 5px;
-  box-shadow: inset 0 0 0 5px var(--surface), inset 0 0 0 8px var(--red);
-}
-
-.seal-big .seal-animal {
-  font-size: 3rem;
-}
-
-.seal-big .seal-time {
-  font-size: 0.85rem;
 }
 
 .stamp-in {
@@ -634,11 +784,11 @@ ol {
 
 @keyframes stamp {
   from {
-    transform: scale(2.2) rotate(-10deg);
+    transform: scale(2.2);
     opacity: 0;
   }
   to {
-    transform: scale(1) rotate(-10deg);
+    transform: scale(1);
     opacity: 1;
   }
 }
@@ -673,7 +823,7 @@ ol {
 }
 
 .slot {
-  min-height: 132px;
+  min-height: 150px;
   min-width: 0;
   border: 1.5px dashed var(--line);
   border-radius: 14px;
@@ -693,12 +843,7 @@ ol {
 }
 
 .slot .seal {
-  --name-size: 0.75rem;
-  width: min(64px, 100%);
-}
-
-.slot .seal-animal {
-  font-size: 1.2rem;
+  width: min(84px, 100%);
 }
 
 .slot-empty {

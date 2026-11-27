@@ -7,9 +7,9 @@ test('한마디는 6개이고 id가 겹치지 않는다', () => {
   assert.equal(PHRASES.length, 6)
   assert.equal(new Set(PHRASES.map((p) => p.id)).size, 6)
 })
-test('모든 칸이 비어 있지 않다 (한국어, 가타카나, 일본어 뜻, 쓰는 때, 대답 예시)', () => {
+test('모든 칸이 비어 있지 않다 (이름표, 한국어, 가타카나, 일본어 뜻, 쓰는 때, 대답 예시)', () => {
   for (const p of PHRASES) {
-    for (const k of ['ko', 'kana', 'ja', 'when', 'reply', 'replyKana', 'replyJa'] as const) {
+    for (const k of ['label', 'ko', 'kana', 'ja', 'when', 'reply', 'replyKana', 'replyJa'] as const) {
       assert.ok(p[k].trim().length > 0, `${p.id}.${k}`)
     }
   }
@@ -20,4 +20,7 @@ test('한국어 칸은 한글, 가타카나 칸은 가타카나다', () => {
     assert.match(p.kana, /^[゠-ヿ\s、。？！?!・ー]+$/, p.id)
     assert.doesNotMatch(p.ja, /[가-힣]/, p.id)
   }
+})
+test('이름표는 지도 핀에 들어가게 짧다 (6자 이하)', () => {
+  for (const p of PHRASES) assert.ok([...p.label].length <= 6, `${p.id}.label`)
 })

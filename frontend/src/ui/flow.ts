@@ -5,8 +5,7 @@ import { bookProgress } from '../core/stamps.ts'
 import { PHRASES } from '../data/phrases.ts'
 
 export type Screen =
-  | { kind: 'animal' }
-  | { kind: 'name' }
+  | { kind: 'setup' }
   | { kind: 'board' }
   | { kind: 'opening'; phrase: Phrase }
   | { kind: 'card'; phrase: Phrase }
@@ -22,7 +21,6 @@ export type State = Session | null
 export type Event =
   | { type: 'signedIn'; accountId: string; profile: Profile; stamps: Stamp[]; first: FirstScreen }
   | { type: 'profileSaved'; profile: Profile }
-  | { type: 'reselectAnimal' }
   | { type: 'openPouch'; phrase: Phrase; instant: boolean }
   | { type: 'pouchOpened' }
   | { type: 'said' }
@@ -46,11 +44,7 @@ export function reduce(state: State, e: Event): State {
 
   switch (e.type) {
     case 'profileSaved':
-      return s.kind === 'animal' || s.kind === 'name'
-        ? { ...state, profile: e.profile, screen: { kind: firstScreen(e.profile) } }
-        : state
-    case 'reselectAnimal':
-      return s.kind === 'name' ? go({ kind: 'animal' }) : state
+      return s.kind === 'setup' ? { ...state, profile: e.profile, screen: { kind: firstScreen(e.profile) } } : state
     case 'openPouch':
       if (s.kind !== 'board') return state
       return go(e.instant ? { kind: 'card', phrase: e.phrase } : { kind: 'opening', phrase: e.phrase })
