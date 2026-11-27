@@ -14,7 +14,8 @@ export type Screen =
 
 /**
  * phrases는 로그인 직후 받아 둔 한마디. 카드는 여기서만 읽으므로 네트워크를 기다리지 않는다.
- * stamps는 아직 서버에 못 보낸 도장도 포함한다. stampNotice는 서버가 받지 않은 도장의 안내 (서버 문구)
+ * stamps는 아직 서버에 못 보낸 도장도 포함한다. stampNotice는 서버가 받지 않은 도장의 안내 (서버 문구).
+ * opened는 이번에 한 번 열어 본 한마디 id. 다시 열 때는 흔들림 없이 바로 카드 (새로고침하면 비지만 도장 받은 것은 계속 바로)
  */
 export type Session = {
   accountId: string
@@ -23,6 +24,7 @@ export type Session = {
   phrases: Phrase[]
   screen: Screen
   stampNotice: string | null
+  opened: string[]
 }
 
 /** null이면 로그인 화면 */
@@ -50,7 +52,7 @@ export type Event =
 /** 지금 화면에서 받을 수 없는 이벤트는 무시하고 같은 상태를 돌려준다. */
 export function reduce(state: State, e: Event): State {
   if (e.type === 'signedIn') {
-    return { accountId: e.accountId, profile: e.profile, stamps: e.stamps, phrases: e.phrases, screen: { kind: e.first }, stampNotice: null }
+    return { accountId: e.accountId, profile: e.profile, stamps: e.stamps, phrases: e.phrases, screen: { kind: e.first }, stampNotice: null, opened: [] }
   }
   if (!state) return state
   if (e.type === 'signOut') return null
@@ -65,9 +67,16 @@ export function reduce(state: State, e: Event): State {
   switch (e.type) {
     case 'profileSaved':
       return s.kind === 'setup' ? { ...state, profile: e.profile, screen: { kind: firstScreen(e.profile) } } : state
-    case 'openPouch':
+    case 'openPouch': {
       if (s.kind !== 'board') return state
-      return go(e.instant ? { kind: 'card', phrase: e.phrase } : { kind: 'opening', phrase: e.phrase })
+      const id = e.phrase.id
+      const seen = state.opened.includes(id) || state.stamps.some((st) => st.phraseId === id)
+      return {
+        ...state,
+        opened: state.opened.includes(id) ? state.opened : [...state.opened, id],
+        screen: e.instant || seen ? { kind: 'card', phrase: e.phrase } : { kind: 'opening', phrase: e.phrase },
+      }
+    }
     case 'pouchOpened':
       return s.kind === 'opening' ? go({ kind: 'card', phrase: s.phrase }) : state
     case 'said':

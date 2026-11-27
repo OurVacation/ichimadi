@@ -99,3 +99,16 @@ test('서버가 받지 않은 도장(404)은 지우고 서버 문구를 남긴�
   const other = signedIn(phrases, [stamp('q1')])
   assert.equal(reduce(other, { type: 'stampDropped', accountId: 'other', phraseId: 'q1', message: 'x' }), other)
 })
+
+test('한 번 열어 본 복주머니와 도장 받은 복주머니는 흔들림 없이 바로 카드', () => {
+  const phrases = [phrase('q1'), phrase('q2'), phrase('q3')]
+  let s = signedIn(phrases, [stamp('q3')])
+  s = reduce(s, { type: 'openPouch', phrase: phrases[0], instant: false })
+  assert.deepEqual(s?.screen, { kind: 'opening', phrase: phrases[0] })
+  s = reduce(reduce(s, { type: 'pouchOpened' }), { type: 'toBoard' })
+  assert.deepEqual(reduce(s, { type: 'openPouch', phrase: phrases[0], instant: false })?.screen, { kind: 'card', phrase: phrases[0] })
+  assert.deepEqual(reduce(s, { type: 'openPouch', phrase: phrases[1], instant: false })?.screen, { kind: 'opening', phrase: phrases[1] })
+  assert.deepEqual(reduce(s, { type: 'openPouch', phrase: phrases[2], instant: false })?.screen, { kind: 'card', phrase: phrases[2] })
+  // 다시 로그인(새로고침)하면 열어 본 기록은 없다
+  assert.deepEqual(signedIn(phrases)?.opened, [])
+})
