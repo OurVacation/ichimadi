@@ -188,10 +188,138 @@
           }
         ]
       }
+    },
+    "/api/me/stamps": {
+      "get": {
+        "tags": [
+          "stamps"
+        ],
+        "summary": "내 도장과 카테고리별 진행도",
+        "operationId": "get_stamps_api_me_stamps_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StampsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "stamps"
+        ],
+        "summary": "도장 받기",
+        "operationId": "add_stamp_api_me_stamps_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddStampRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StampsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "AddStampRequest": {
+        "properties": {
+          "phrase_id": {
+            "type": "string",
+            "title": "Phrase Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrase_id"
+        ],
+        "title": "AddStampRequest",
+        "examples": [
+          {
+            "phrase_id": "q1"
+          }
+        ]
+      },
       "Animal": {
         "type": "string",
         "enum": [
@@ -389,6 +517,110 @@
           {
             "animal": "tiger",
             "korean_name": ""
+          }
+        ]
+      },
+      "SetProgress": {
+        "properties": {
+          "set_code": {
+            "type": "string",
+            "title": "Set Code"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "set_code",
+          "count",
+          "total",
+          "completed"
+        ],
+        "title": "SetProgress",
+        "examples": [
+          {
+            "completed": false,
+            "count": 0,
+            "set_code": "hackathon",
+            "total": 6
+          }
+        ]
+      },
+      "StampItem": {
+        "properties": {
+          "phrase_id": {
+            "type": "string",
+            "title": "Phrase Id"
+          },
+          "set_code": {
+            "type": "string",
+            "title": "Set Code"
+          },
+          "stamped_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Stamped At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrase_id",
+          "set_code",
+          "stamped_at"
+        ],
+        "title": "StampItem",
+        "examples": [
+          {
+            "phrase_id": "q1",
+            "set_code": "hackathon",
+            "stamped_at": "2026-11-29T05:00:00Z"
+          }
+        ]
+      },
+      "StampsResponse": {
+        "properties": {
+          "stamps": {
+            "items": {
+              "$ref": "#/components/schemas/StampItem"
+            },
+            "type": "array",
+            "title": "Stamps"
+          },
+          "progress": {
+            "items": {
+              "$ref": "#/components/schemas/SetProgress"
+            },
+            "type": "array",
+            "title": "Progress"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stamps",
+          "progress"
+        ],
+        "title": "StampsResponse",
+        "examples": [
+          {
+            "progress": [
+              {
+                "completed": false,
+                "count": 0,
+                "set_code": "hackathon",
+                "total": 6
+              }
+            ],
+            "stamps": []
           }
         ]
       }
