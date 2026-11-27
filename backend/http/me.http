@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:8000
+
+### Read profile
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{token}}
+
+### Save a name
+PUT {{baseUrl}}/api/me/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"animal": "tiger", "korean_name": "양자"}
+
+### Skip name
+PUT {{baseUrl}}/api/me/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"animal": "tiger", "korean_name": ""}

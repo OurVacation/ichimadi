@@ -35,10 +35,481 @@
           }
         }
       }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "로그인",
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "내 정보",
+        "operationId": "me_api_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/me/profile": {
+      "put": {
+        "tags": [
+          "me"
+        ],
+        "summary": "도장 프로필 저장",
+        "operationId": "save_profile_api_me_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/me/stamps": {
+      "get": {
+        "tags": [
+          "stamps"
+        ],
+        "summary": "내 도장과 카테고리별 진행도",
+        "operationId": "get_stamps_api_me_stamps_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StampsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "stamps"
+        ],
+        "summary": "도장 받기",
+        "operationId": "add_stamp_api_me_stamps_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddStampRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StampsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/phrase-sets": {
+      "get": {
+        "tags": [
+          "phrases"
+        ],
+        "summary": "한마디 카테고리 목록",
+        "operationId": "get_phrase_sets_api_phrase_sets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSetsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/phrases": {
+      "get": {
+        "tags": [
+          "phrases"
+        ],
+        "summary": "한마디 목록",
+        "operationId": "get_phrases_api_phrases_get",
+        "parameters": [
+          {
+            "name": "set_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Set Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhrasesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/names/suggest": {
+      "post": {
+        "tags": [
+          "names"
+        ],
+        "summary": "한국식 이름 후보",
+        "operationId": "suggest_api_names_suggest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameSuggestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameSuggestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "AddStampRequest": {
+        "properties": {
+          "phrase_id": {
+            "type": "string",
+            "title": "Phrase Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrase_id"
+        ],
+        "title": "AddStampRequest",
+        "examples": [
+          {
+            "phrase_id": "q1"
+          }
+        ]
+      },
+      "Animal": {
+        "type": "string",
+        "enum": [
+          "tiger",
+          "rabbit",
+          "magpie",
+          "bear"
+        ],
+        "title": "Animal"
+      },
+      "Candidate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "note"
+        ],
+        "title": "Candidate",
+        "examples": [
+          {
+            "name": "전양자",
+            "note": "「田」と「陽子」の韓国語読み"
+          }
+        ]
+      },
       "ErrorResponse": {
         "properties": {
           "code": {
@@ -80,6 +551,479 @@
             "status": "ok"
           }
         ]
+      },
+      "LoginRequest": {
+        "properties": {
+          "login_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Login Id"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "login_id",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "examples": [
+          {
+            "login_id": "judge01",
+            "password": "4821"
+          }
+        ]
+      },
+      "LoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "account_id",
+          "expires_in"
+        ],
+        "title": "LoginResponse",
+        "examples": [
+          {
+            "access_token": "eyJ...",
+            "account_id": "judge01",
+            "expires_in": 259200,
+            "token_type": "bearer"
+          }
+        ]
+      },
+      "MeResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "animal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Animal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "korean_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Korean Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "animal",
+          "korean_name"
+        ],
+        "title": "MeResponse",
+        "examples": [
+          {
+            "account_id": "judge01"
+          }
+        ]
+      },
+      "NameSuggestRequest": {
+        "properties": {
+          "ja_name": {
+            "type": "string",
+            "title": "Ja Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ja_name"
+        ],
+        "title": "NameSuggestRequest",
+        "examples": [
+          {
+            "ja_name": "田中 陽子"
+          }
+        ]
+      },
+      "NameSuggestResponse": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/Candidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "candidates"
+        ],
+        "title": "NameSuggestResponse",
+        "examples": [
+          {
+            "candidates": [
+              {
+                "name": "전양자",
+                "note": "「田」と「陽子」の韓国語読み"
+              },
+              {
+                "name": "전요코",
+                "note": "「田」を韓国の姓に、名前は音のまま"
+              },
+              {
+                "name": "전서연",
+                "note": "「陽子」の明るい印象に近い韓国の名前"
+              }
+            ]
+          }
+        ]
+      },
+      "PhraseItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "set_code": {
+            "type": "string",
+            "title": "Set Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "ko": {
+            "type": "string",
+            "title": "Ko"
+          },
+          "kana": {
+            "type": "string",
+            "title": "Kana"
+          },
+          "ja": {
+            "type": "string",
+            "title": "Ja"
+          },
+          "when": {
+            "type": "string",
+            "title": "When"
+          },
+          "reply": {
+            "type": "string",
+            "title": "Reply"
+          },
+          "reply_kana": {
+            "type": "string",
+            "title": "Reply Kana"
+          },
+          "reply_ja": {
+            "type": "string",
+            "title": "Reply Ja"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "set_code",
+          "label",
+          "ko",
+          "kana",
+          "ja",
+          "when",
+          "reply",
+          "reply_kana",
+          "reply_ja"
+        ],
+        "title": "PhraseItem",
+        "examples": [
+          {
+            "id": "q1",
+            "ja": "どんなアプリですか？",
+            "kana": "オットン エビンガヨ?",
+            "ko": "어떤 앱인가요?",
+            "label": "はじめまして",
+            "reply": "일본인을 위한 ○○ 앱이에요",
+            "reply_ja": "日本人のための○○アプリです",
+            "reply_kana": "イルボニヌル ウィハン ○○ エビエヨ",
+            "set_code": "hackathon",
+            "when": "他のチームのブースに初めて行ったとき"
+          }
+        ]
+      },
+      "PhraseSetItem": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name_ja": {
+            "type": "string",
+            "title": "Name Ja"
+          },
+          "phrase_count": {
+            "type": "integer",
+            "title": "Phrase Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name_ja",
+          "phrase_count"
+        ],
+        "title": "PhraseSetItem",
+        "examples": [
+          {
+            "code": "hackathon",
+            "name_ja": "ハッカソン会場",
+            "phrase_count": 6
+          }
+        ]
+      },
+      "PhraseSetsResponse": {
+        "properties": {
+          "phrase_sets": {
+            "items": {
+              "$ref": "#/components/schemas/PhraseSetItem"
+            },
+            "type": "array",
+            "title": "Phrase Sets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrase_sets"
+        ],
+        "title": "PhraseSetsResponse",
+        "examples": [
+          {
+            "phrase_sets": [
+              {
+                "code": "hackathon",
+                "name_ja": "ハッカソン会場",
+                "phrase_count": 6
+              }
+            ]
+          }
+        ]
+      },
+      "PhrasesResponse": {
+        "properties": {
+          "phrases": {
+            "items": {
+              "$ref": "#/components/schemas/PhraseItem"
+            },
+            "type": "array",
+            "title": "Phrases"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrases"
+        ],
+        "title": "PhrasesResponse",
+        "examples": [
+          {
+            "phrases": [
+              {
+                "id": "q1",
+                "ja": "どんなアプリですか？",
+                "kana": "オットン エビンガヨ?",
+                "ko": "어떤 앱인가요?",
+                "label": "はじめまして",
+                "reply": "일본인을 위한 ○○ 앱이에요",
+                "reply_ja": "日本人のための○○アプリです",
+                "reply_kana": "イルボニヌル ウィハン ○○ エビエヨ",
+                "set_code": "hackathon",
+                "when": "他のチームのブースに初めて行ったとき"
+              }
+            ]
+          }
+        ]
+      },
+      "ProfileRequest": {
+        "properties": {
+          "animal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Animal"
+          },
+          "korean_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Korean Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "animal",
+          "korean_name"
+        ],
+        "title": "ProfileRequest",
+        "examples": [
+          {
+            "animal": "tiger",
+            "korean_name": "양자"
+          },
+          {
+            "animal": "tiger",
+            "korean_name": ""
+          }
+        ]
+      },
+      "SetProgress": {
+        "properties": {
+          "set_code": {
+            "type": "string",
+            "title": "Set Code"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "set_code",
+          "count",
+          "total",
+          "completed"
+        ],
+        "title": "SetProgress",
+        "examples": [
+          {
+            "completed": false,
+            "count": 0,
+            "set_code": "hackathon",
+            "total": 6
+          }
+        ]
+      },
+      "StampItem": {
+        "properties": {
+          "phrase_id": {
+            "type": "string",
+            "title": "Phrase Id"
+          },
+          "set_code": {
+            "type": "string",
+            "title": "Set Code"
+          },
+          "stamped_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Stamped At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrase_id",
+          "set_code",
+          "stamped_at"
+        ],
+        "title": "StampItem",
+        "examples": [
+          {
+            "phrase_id": "q1",
+            "set_code": "hackathon",
+            "stamped_at": "2026-11-29T05:00:00Z"
+          }
+        ]
+      },
+      "StampsResponse": {
+        "properties": {
+          "stamps": {
+            "items": {
+              "$ref": "#/components/schemas/StampItem"
+            },
+            "type": "array",
+            "title": "Stamps"
+          },
+          "progress": {
+            "items": {
+              "$ref": "#/components/schemas/SetProgress"
+            },
+            "type": "array",
+            "title": "Progress"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stamps",
+          "progress"
+        ],
+        "title": "StampsResponse",
+        "examples": [
+          {
+            "progress": [
+              {
+                "completed": false,
+                "count": 0,
+                "set_code": "hackathon",
+                "total": 6
+              }
+            ],
+            "stamps": []
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
       }
     }
   }

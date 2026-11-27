@@ -1,0 +1,16 @@
+from datetime import datetime
+
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db import Base
+
+
+class Stamp(Base):
+    __tablename__ = "stamps"
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    phrase_id: Mapped[str] = mapped_column(Text, ForeignKey("phrases.id"), primary_key=True)
+    stamped_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

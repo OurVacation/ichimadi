@@ -1,0 +1,19 @@
+@baseUrl = http://localhost:8000
+
+### List stamps
+GET {{baseUrl}}/api/me/stamps
+Authorization: Bearer {{token}}
+
+### Add stamp (repeat to check idempotence)
+POST {{baseUrl}}/api/me/stamps
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"phrase_id": "q1"}
+
+### Unknown phrase: 404 unknown_phrase
+POST {{baseUrl}}/api/me/stamps
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"phrase_id": "q99"}
