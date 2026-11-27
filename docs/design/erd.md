@@ -23,7 +23,7 @@ erDiagram
   stamp_profiles {
     bigint user_id PK, FK
     animal animal "NULL, tiger | rabbit | magpie | bear"
-    text korean_name "NULL, 한글 1~10자"
+    text korean_name "NULL=미정, ''=이름 패스, 한글 1~10자"
     timestamptz updated_at
   }
   phrase_sets {
@@ -36,6 +36,7 @@ erDiagram
     text id PK "q1 … (phrases.json의 id)"
     text set_code FK
     int sort_order "카테고리 안 순서"
+    text label "지도 핀 이름표 (일본어)"
     text ko
     text kana
     text ja_meaning
@@ -52,7 +53,7 @@ erDiagram
   }
   name_suggestions {
     text input_key PK "정규화한 일본어 이름"
-    jsonb candidates "[{hangul, kana, meaning_ja}] × 3"
+    jsonb candidates "[{name, note}] × 3"
     text model "생성한 모델 이름"
     timestamptz created_at
   }
@@ -79,10 +80,17 @@ erDiagram
 |---|---|---|---|
 | `user_id` | `BIGINT` | PK, FK → `users.id` ON DELETE CASCADE | 사용자당 하나 |
 | `animal` | `animal` | NULL | |
-| `korean_name` | `TEXT` | NULL, `CHECK (korean_name ~ '^[가-힣]{1,10}$')` | 추천 후보 중 고른 이름 |
+| `korean_name` | `TEXT` | NULL, `CHECK (korean_name = '' OR korean_name ~ '^[가-힣]{1,10}$')` | 추천 후보 중 고른 이름 |
 | `updated_at` | `TIMESTAMPTZ` | NOT NULL, default `now()` | |
 
-행이 없으면 둘 다 NULL로 본다. 첫 `PUT /api/me/profile` 때 upsert.
+- 행이 없으면 둘 다 NULL로 본다. 첫 `PUT /api/me/profile` 때 upsert.
+- `korean_name`의 세 가지 상태 (FE `Profile.koreanName`과 같음):
+
+| 값 | 뜻 | FE 화면 |
+|---|---|---|
+| `NULL` | 아직 안 정함 | 설정 화면 |
+| `''` (빈 문자열) | 이름을 패스함, 동물만 있는 도장 | 한마디판 |
+| 한글 1~10자 | 고른 이름 | 한마디판 |
 
 ### `phrase_sets`: 한마디 카테고리 (확장용)
 
@@ -103,6 +111,7 @@ erDiagram
 | `id` | `TEXT` | PK | `id` (카테고리가 달라도 전체에서 유일) |
 | `set_code` | `TEXT` | NOT NULL, FK → `phrase_sets.code` | `set` (없으면 `hackathon`) |
 | `sort_order` | `INT` | NOT NULL | 같은 카테고리 안의 배열 순서 |
+| `label` | `TEXT` | NOT NULL | `label` (지도 핀에 붙는 짧은 이름표, 일본어) |
 | `ko` | `TEXT` | NOT NULL | `ko` |
 | `kana` | `TEXT` | NOT NULL | `kana` |
 | `ja_meaning` | `TEXT` | NOT NULL | `ja` |
@@ -130,8 +139,8 @@ erDiagram
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
-| `input_key` | `TEXT` | PK | 일본어 이름 정규화 값(NFKC → trim → 공백 하나로 → 마지막 단어). FE `names.ts`와 같은 기준 |
-| `candidates` | `JSONB` | NOT NULL | 검증을 통과한 후보 3개 `[{"hangul","kana","meaning_ja"}]` |
+| `input_key` | `TEXT` | PK | 일본어 이름(성+이름 전체) 정규화 값: NFKC → trim → 연속 공백을 반각 공백 하나로 |
+| `candidates` | `JSONB` | NOT NULL | 검증을 통과한 후보 3개 `[{"name","note"}]` (FE `NameCandidate`와 같은 모양) |
 | `model` | `TEXT` | NOT NULL | 예: `gemini-…-flash`. 모델을 바꾸면 어떤 결과인지 알 수 있게 |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, default `now()` | |
 
@@ -177,5 +186,7 @@ attempt_result: understood | retry
 | `stamps.collected_at` | `stamps.stamped_at` | ADR-002 |
 | `phrases.set_code` (자유 문자열) | `phrases.set_code` FK → `phrase_sets` | ADR-003 |
 | `phrases.id` 정수 가능성 | `TEXT` (`q1`…) | ADR-002 |
+| (없음) | `phrases.label` | FE PR #2에서 `phrases.json`에 추가됨 |
+| `korean_name` NULL 또는 이름 | `''`(이름 패스)도 허용 | FE PR #2, ADR-002 |
 | `attempts` | 보류 | ADR-001 H-2 |
 | 뷰 `phrase_stats`, `event_stats` | P2 때 | 범위 밖 |

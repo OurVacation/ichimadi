@@ -10,7 +10,7 @@
 backend/CLAUDE.md 초안의 모델은 `users`, `phrases`(+`set_code`), `stamps`(`collected_at`), `attempts`, `seals`(`korean_name`, `name_pool_id`, `animal`, `style`), `name_pool`이었다. 아직 마이그레이션이 하나도 없어서 지금 바꾸는 비용은 없다.
 
 - "seal"과 "stamp"가 둘 다 도장이라 헷갈린다. FE는 받은 도장 기록을 `Stamp`, 사용자가 고른 동물·이름을 `Profile`이라고 부른다.
-- FE가 한국식 이름 후보를 직접 만든다(`frontend/src/core/names.ts`). 서버에는 고른 이름 문자열만 온다.
+- 처음 작성 때 FE가 한국식 이름 후보를 직접 만들었다(`frontend/src/core/names.ts`). 이후 BE가 LLM으로 만들기로 바뀌었다(ADR-004). 어느 쪽이든 `stamp_profiles`에는 고른 이름 문자열만 저장한다.
 - FE의 한마디 id는 `content/phrases.json`의 문자열(`q1`~`q6`)이다.
 
 ## 결정
@@ -21,7 +21,8 @@ backend/CLAUDE.md 초안의 모델은 `users`, `phrases`(+`set_code`), `stamps`(
 4. `phrases.id`는 `TEXT`, `phrases.json`의 id를 그대로 쓴다. ~~`set_code`는 뺀다.~~ → [ADR-003](ADR-003-phrase-sets-and-api.md)에 따라 `phrase_sets` 테이블과 `phrases.set_code` FK를 둔다.
 5. `attempts`는 보류(ADR-001 H-2). 만들지 않는다.
 6. `animal`, `user_role`은 PostgreSQL ENUM.
-7. `korean_name`은 DB에도 `CHECK (korean_name ~ '^[가-힣]{1,10}$')`를 둔다.
+7. `korean_name`은 DB에도 `CHECK (korean_name = '' OR korean_name ~ '^[가-힣]{1,10}$')`를 둔다. `NULL` = 아직 안 정함, `''` = 이름을 패스함(동물만 있는 도장, FE PR #2), 그 밖 = 고른 이름. 세 상태를 컬럼 하나로 나타낸다(따로 `name_skipped` 플래그를 두면 FE `Profile.koreanName`과 모양이 달라진다).
+9. (2026-11-27 추가) `phrases.label`(지도 핀 이름표, 일본어) 컬럼을 둔다. FE PR #2에서 `phrases.json`에 `label`이 추가됐다.
 8. `stamp_profiles` 행은 첫 프로필 저장 때 upsert로 만든다. 행이 없으면 둘 다 NULL로 본다.
 
 ## 검토한 대안

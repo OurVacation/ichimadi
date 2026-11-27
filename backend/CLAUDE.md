@@ -34,15 +34,16 @@ backend/
 ## 설계 문서
 
 - 구성 계획: `docs/design/backend-architecture.md` · ERD: `docs/design/erd.md` · API 명세: `docs/design/api.md`
+- 구현 작업 목록(T1~T6, 파일·규칙·테스트·완료 조건): `docs/design/backend-tasks.md`
 - 결정: `docs/adr/ADR-001`(API를 FE `Store`에 맞춤), `ADR-002`(데이터 모델), `ADR-003`(한마디 카테고리·API), `ADR-004`(LLM 이름 추천)
 - 보류: H-1 `stamped_at`을 FE 시각으로 받을지, H-2 retry(attempts) 기록, H-3 `hackathon` 외 카테고리 콘텐츠. 정해지기 전에는 구현하지 않는다
 
 ## 데이터 모델 핵심
 
 - `users`(id, login_id UNIQUE — 정규화된 값, password_hash, role: judge|spare|team|demo, ja_name NULL, created_at)
-- `stamp_profiles`(user_id PK, animal NULL: tiger|rabbit|magpie|bear, korean_name NULL: 한글 1~10자, updated_at) — 내 도장 모양
+- `stamp_profiles`(user_id PK, animal NULL: tiger|rabbit|magpie|bear, korean_name NULL=미정 · ''=이름 패스 · 한글 1~10자, updated_at) — 내 도장 모양
 - `phrase_sets`(code TEXT PK, name_ja, sort_order, is_active) — 한마디 카테고리. `content/phrase_sets.json`에서 시드. 지금은 `hackathon` 하나
-- `phrases`(id TEXT `q1`…, set_code FK, sort_order, ko, kana, ja_meaning, usage_ja, reply_ko, reply_kana, reply_ja, is_active) — `content/phrases.json`에서 시드, 지우지 않고 비활성화
+- `phrases`(id TEXT `q1`…, set_code FK, sort_order, label, ko, kana, ja_meaning, usage_ja, reply_ko, reply_kana, reply_ja, is_active) — `content/phrases.json`에서 시드, 지우지 않고 비활성화
 - `stamps`(user_id, phrase_id, stamped_at) — **PK (user_id, phrase_id)**. 한마디당 도장은 하나. 진행도·완료는 **카테고리별**
 - `name_suggestions`(input_key PK, candidates JSONB, model, created_at) — LLM 이름 후보 캐시
 - 통계(P2)는 **role이 judge·spare인 사용자만** 센다(팀 테스트 기록 제외)
@@ -57,7 +58,7 @@ backend/
 - 인증은 `HTTPBearer` 기반 `get_current_user` 의존성으로 한다. JWT 만료는 72시간(행사 기간을 덮도록).
 - 회원가입·관리자용 API는 만들지 않는다. 계정 발급과 리셋은 `scripts/`에서만 한다.
 - 비밀번호, 토큰, 계정 CSV 내용, 일본어 이름, LLM 응답 원문을 로그로 남기지 않는다.
-- LLM은 이름 후보에만 쓴다. 한마디 문장은 생성하지 않는다. LLM 출력은 서버가 검증한 뒤에만 저장·반환하고, 실패하면 503 `name_suggest_unavailable`(FE가 `names.ts`로 대비).
+- LLM은 이름 후보에만 쓴다. 한마디 문장은 생성하지 않는다. LLM 출력은 서버가 검증한 뒤에만 저장·반환하고, 실패하면 503 `name_suggest_unavailable`(FE가 `temporaryNameGenerator`로 대비). 입력은 성+이름 전체, 출력은 FE `NameCandidate`와 같은 `{name, note}`.
 - 테스트에서 실제 LLM을 부르지 않는다. `get_name_generator`를 가짜 구현으로 바꾼다.
 - `frontend/`의 파일은 수정하지 않는다. 계약을 바꿔야 하면 무엇을 바꿀지 먼저 제안한다.
 
