@@ -208,7 +208,14 @@ export function App({
     case 'opening':
       return <Opening onOpened={pouchOpened} />
     case 'card':
-      return <Card phrase={screen.phrase} onSaid={() => dispatch({ type: 'said' })} onBack={() => dispatch({ type: 'toBoard' })} />
+      return (
+        <Card
+          phrase={screen.phrase}
+          stamp={stamps.find((s) => s.phraseId === screen.phrase.id)}
+          onSaid={() => dispatch({ type: 'said' })}
+          onBack={() => dispatch({ type: 'toBoard' })}
+        />
+      )
     case 'partner':
       return (
         <Partner

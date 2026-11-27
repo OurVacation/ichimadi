@@ -599,6 +599,17 @@ ol {
 }
 
 /* card */
+.card-done {
+  align-self: flex-start;
+  font-weight: 800;
+  color: var(--red-deep);
+  background: var(--red-soft);
+  border: 1.5px solid var(--red);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-variant-numeric: tabular-nums;
+}
+
 .say {
   background: var(--red-soft);
   border-radius: 18px;

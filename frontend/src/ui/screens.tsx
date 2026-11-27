@@ -418,12 +418,14 @@ function Spoken({ ko, kana, className }: { ko: string; kana: string; className: 
   )
 }
 
-export function Card({ phrase, onSaid, onBack }: { phrase: Phrase; onSaid: () => void; onBack: () => void }) {
+/** stamp: 이미 받은 한마디면 그 도장. 카드 맨 위에 받은 시각을 보인다 */
+export function Card({ phrase, stamp, onSaid, onBack }: { phrase: Phrase; stamp?: Stamp; onSaid: () => void; onBack: () => void }) {
   return (
     <main className="page stack">
       <button className="link back" type="button" onClick={onBack}>
         {JA.card.back}
       </button>
+      {stamp && <p className="card-done">{JA.card.done(formatStampTime(stamp.at))}</p>}
       <section className="say">
         <Spoken ko={phrase.ko} kana={phrase.kana} className="say-ko" />
         <p className="ja">{phrase.ja}</p>

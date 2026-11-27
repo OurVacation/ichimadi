@@ -70,6 +70,7 @@ export const JA = {
   },
   card: {
     back: '← マップへ',
+    done: (time: string) => `✓ 通じた ${time}`,
     meaning: '意味',
     when: '使うとき',
     listen: '▶ 音声で聞く',
