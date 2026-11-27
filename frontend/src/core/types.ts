@@ -2,7 +2,7 @@
 
 export type Animal = 'tiger' | 'rabbit' | 'magpie' | 'bear'
 
-/** 행사장 한마디 하나. 문장이 확정되면 data/phrases.ts만 바꾼다. */
+/** 행사장 한마디 하나. 서버(GET /api/phrases)에서 받는다. 원본은 content/phrases.json (DB 시드) */
 export type Phrase = {
   id: string
   /** 지도 핀에 붙는 짧은 이름표 (일본어) */
@@ -34,7 +34,7 @@ export type Stamp = {
 export type TrialAccount = { id: string; password: string }
 
 /**
- * 저장 연결. 지금은 기기 저장(createLocalStore), 서버가 정해지면 같은 모양의 서버 연결로 바꾼다.
+ * 저장 연결. 기본은 서버(api/store.ts), 오프라인 시연은 기기 저장(createLocalStore). main.tsx가 고른다.
  * 화면은 이것으로만 저장에 닿는다 (P-05).
  */
 export interface Store {
@@ -51,9 +51,12 @@ export type NameCandidate = { name: string; note?: string }
 
 /**
  * 이름 짓기를 끼우는 자리. 일본 이름 전체(성+이름)를 받아 후보를 돌려준다.
- * 지금은 임시 규칙(core/nameGenerator.ts), 팀원의 AI가 오면 main.tsx에서 이것만 바꿔 끼운다.
+ * 기본은 서버(api/names.ts, 안 되면 임시 규칙), 오프라인 시연은 임시 규칙(core/nameGenerator.ts). main.tsx가 고른다.
  */
 export type NameGenerator = (fullName: string) => Promise<NameCandidate[]>
+
+/** 한마디 목록을 받는 자리. 로그인 직후 한 번 부른다. 못 받으면 던진다 (화면이 다시 시도하게 한다) */
+export type PhraseSource = () => Promise<Phrase[]>
 
 /** 로그인 직후 갈 화면 */
 export type FirstScreen = 'setup' | 'board'

@@ -4,8 +4,7 @@ import { hangulName } from '../core/names.ts'
 import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
-import { POUCH_SPOTS } from '../data/boardMap.ts'
-import { PHRASES } from '../data/phrases.ts'
+import { placePins } from '../data/boardMap.ts'
 import { JA, PARTNER } from '../i18n.ts'
 import { MapArt } from './map.tsx'
 import { Pouch } from './parts.tsx'
@@ -17,8 +16,8 @@ type Result = Promise<boolean>
 const stampOf = (stamps: Stamp[], phraseId: string) => stamps.find((s) => s.phraseId === phraseId)
 
 /** 로그인 화면 아래 알림. checking은 QR로 로그인하는 동안 */
-export type LoginNotice = 'none' | 'checking' | 'failed' | 'error' | 'qrBroken'
-const NOTICE_TEXT = { failed: JA.login.failed, error: JA.error, qrBroken: JA.login.qrBroken }
+export type LoginNotice = 'none' | 'checking' | 'failed' | 'error' | 'qrBroken' | 'expired'
+const NOTICE_TEXT = { failed: JA.login.failed, error: JA.error, qrBroken: JA.login.qrBroken, expired: JA.login.expired }
 
 export function Login({
   onSubmit,
@@ -256,8 +255,8 @@ export function Setup({
   )
 }
 
-function Progress({ stamps }: { stamps: Stamp[] }) {
-  const p = bookProgress(stamps, PHRASES)
+function Progress({ stamps, phrases }: { stamps: Stamp[]; phrases: Phrase[] }) {
+  const p = bookProgress(stamps, phrases)
   return (
     <span className="count">
       {JA.board.stamps} {p.count}/{p.total}
@@ -268,21 +267,24 @@ function Progress({ stamps }: { stamps: Stamp[] }) {
 export function Board({
   profile,
   stamps,
+  phrases,
   onOpen,
   onBook,
   onLogout,
 }: {
   profile: Profile
   stamps: Stamp[]
+  phrases: Phrase[]
   onOpen: (p: Phrase) => void
   onBook: () => void
   onLogout: () => void
 }) {
+  const pins = placePins(phrases)
   return (
     <main className="page stack">
       <header className="bar">
         <strong className="brand-sm">{JA.appName}</strong>
-        <Progress stamps={stamps} />
+        <Progress stamps={stamps} phrases={phrases} />
       </header>
       <div className="me">
         <Seal animal={profile.animal} name={profile.koreanName} />
@@ -297,11 +299,10 @@ export function Board({
       </div>
       <p className="hint">{JA.board.hint}</p>
       <div className="map">
-        <MapArt />
+        <MapArt pins={pins} />
         <ol className="map-pins">
-          {PHRASES.map((p, i) => {
+          {pins.map(({ phrase: p, spot, n }) => {
             const got = !!stampOf(stamps, p.id)
-            const spot = POUCH_SPOTS[p.id]
             return (
               <li key={p.id} className="pin" style={{ left: `${spot.x}%`, top: `${spot.y}%` }}>
                 <button className={`pin-btn${got ? ' got' : ''}`} type="button" onClick={() => onOpen(p)}>
@@ -312,7 +313,7 @@ export function Board({
                     </span>
                   )}
                   <span className="pin-label">
-                    <b>{i + 1}</b> {p.label}
+                    <b>{n}</b> {p.label}
                   </span>
                 </button>
               </li>
@@ -338,6 +339,30 @@ export function Opening({ onOpened }: { onOpened: () => void }) {
       <p className="muted" aria-live="polite">
         {JA.opening.label}
       </p>
+    </main>
+  )
+}
+
+/** 로그인 뒤 한마디나 내 정보를 못 받았을 때. 다시 시도하거나 로그아웃한다 */
+export function LoadFailed({ onRetry, onLogout }: { onRetry: () => Promise<void>; onLogout: () => void }) {
+  const [busy, setBusy] = useState(false)
+  async function retry() {
+    setBusy(true)
+    await onRetry()
+    setBusy(false)
+  }
+  return (
+    <main className="page center stack">
+      <h2>{JA.load.title}</h2>
+      <p className="muted" role="alert">
+        {JA.load.lead}
+      </p>
+      <button className="btn wide" type="button" disabled={busy} onClick={retry}>
+        {busy ? JA.load.busy : JA.load.retry}
+      </button>
+      <button className="link" type="button" disabled={busy} onClick={onLogout}>
+        {JA.board.logout}
+      </button>
     </main>
   )
 }
@@ -438,12 +463,14 @@ export function Stamped({
   phrase,
   profile,
   stamps,
+  phrases,
   onBook,
   onBoard,
 }: {
   phrase: Phrase
   profile: Profile
   stamps: Stamp[]
+  phrases: Phrase[]
   onBook: () => void
   onBoard: () => void
 }) {
@@ -459,7 +486,7 @@ export function Stamped({
       />
       <h2 className="done-title">{JA.stamped.title}</h2>
       <p className="ja">{phrase.ja}</p>
-      <Progress stamps={stamps} />
+      <Progress stamps={stamps} phrases={phrases} />
       <button className="btn wide" type="button" onClick={onBook}>
         {JA.stamped.toBook}
       </button>
@@ -473,6 +500,7 @@ export function Stamped({
 export function Book({
   profile,
   stamps,
+  phrases,
   closed,
   onClose,
   onReopen,
@@ -480,12 +508,13 @@ export function Book({
 }: {
   profile: Profile
   stamps: Stamp[]
+  phrases: Phrase[]
   closed: boolean
   onClose: () => void
   onReopen: () => void
   onBack: () => void
 }) {
-  const p = bookProgress(stamps, PHRASES)
+  const p = bookProgress(stamps, phrases)
 
   if (closed) {
     return (
@@ -514,7 +543,7 @@ export function Book({
       </button>
       <header className="bar">
         <h2>{JA.book.title}</h2>
-        <Progress stamps={stamps} />
+        <Progress stamps={stamps} phrases={phrases} />
       </header>
       <p className="muted">{JA.book.lead}</p>
       {p.complete && (
@@ -524,7 +553,7 @@ export function Book({
         </div>
       )}
       <ol className="book-grid">
-        {PHRASES.map((ph) => {
+        {phrases.map((ph) => {
           const s = stampOf(stamps, ph.id)
           return (
             <li key={ph.id} className={`slot${s ? ' got' : ''}`}>

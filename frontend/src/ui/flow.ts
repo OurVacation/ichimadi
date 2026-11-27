@@ -2,7 +2,6 @@
 import type { FirstScreen, Phrase, Profile, Stamp } from '../core/types.ts'
 import { firstScreen } from '../core/session.ts'
 import { bookProgress } from '../core/stamps.ts'
-import { PHRASES } from '../data/phrases.ts'
 
 export type Screen =
   | { kind: 'setup' }
@@ -13,13 +12,14 @@ export type Screen =
   | { kind: 'stamped'; phrase: Phrase }
   | { kind: 'book'; closed: boolean }
 
-export type Session = { accountId: string; profile: Profile; stamps: Stamp[]; screen: Screen }
+/** phrases는 로그인 직후 받아 둔 한마디. 카드는 여기서만 읽으므로 네트워크를 기다리지 않는다 */
+export type Session = { accountId: string; profile: Profile; stamps: Stamp[]; phrases: Phrase[]; screen: Screen }
 
 /** null이면 로그인 화면 */
 export type State = Session | null
 
 export type Event =
-  | { type: 'signedIn'; accountId: string; profile: Profile; stamps: Stamp[]; first: FirstScreen }
+  | { type: 'signedIn'; accountId: string; profile: Profile; stamps: Stamp[]; phrases: Phrase[]; first: FirstScreen }
   | { type: 'profileSaved'; profile: Profile }
   | { type: 'openPouch'; phrase: Phrase; instant: boolean }
   | { type: 'pouchOpened' }
@@ -35,7 +35,7 @@ export type Event =
 /** 지금 화면에서 받을 수 없는 이벤트는 무시하고 같은 상태를 돌려준다. */
 export function reduce(state: State, e: Event): State {
   if (e.type === 'signedIn') {
-    return { accountId: e.accountId, profile: e.profile, stamps: e.stamps, screen: { kind: e.first } }
+    return { accountId: e.accountId, profile: e.profile, stamps: e.stamps, phrases: e.phrases, screen: { kind: e.first } }
   }
   if (!state) return state
   if (e.type === 'signOut') return null
@@ -61,7 +61,7 @@ export function reduce(state: State, e: Event): State {
     case 'toBook':
       return s.kind === 'board' || s.kind === 'stamped' ? go({ kind: 'book', closed: false }) : state
     case 'closeBook':
-      return s.kind === 'book' && bookProgress(state.stamps, PHRASES).complete ? go({ kind: 'book', closed: true }) : state
+      return s.kind === 'book' && bookProgress(state.stamps, state.phrases).complete ? go({ kind: 'book', closed: true }) : state
     case 'openBook':
       return s.kind === 'book' ? go({ kind: 'book', closed: false }) : state
   }

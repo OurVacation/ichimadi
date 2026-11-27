@@ -12,7 +12,7 @@
 ## 반드시 지킬 것
 
 - 화면 문구는 전부 일본어로 쓴다. 한국어는 한마디 카드의 질문과 상대 대답 예시에만 쓴다.
-- 한마디 데이터는 `content/phrases.json`을 번들에 넣어 쓴다. 카드는 네트워크를 기다리지 않고 탭 후 1초 안에 보여야 한다.
+- 한마디 데이터는 로그인 직후 `GET /api/phrases`로 한 번 받아 기기에 캐시해 둔다(받지 못하면 캐시를 쓴다). 카드는 네트워크를 기다리지 않고 탭 후 1초 안에 보여야 한다.
 - API 호출은 `src/api/` 한 곳에서만 한다. 요청·응답 타입은 생성된 타입만 쓰고 손으로 쓰지 않는다.
 - 에러 응답은 `{code, message_ja}` 형식이다. `message_ja`를 그대로 보여 준다.
 - 기준 브라우저는 iOS Safari와 Android Chrome이다. 모바일 세로 화면 우선.
@@ -25,7 +25,7 @@
 ## API 계약이 바뀌었을 때
 
 ```bash
-npx openapi-typescript ../docs/api/openapi.json -o src/api/schema.d.ts
+npm run api:types   # = openapi-typescript ../docs/api/openapi.json -o src/api/schema.d.ts
 ```
 
 ## 명령
@@ -33,8 +33,9 @@ npx openapi-typescript ../docs/api/openapi.json -o src/api/schema.d.ts
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local   # 백엔드 로그인 전까지 쓰는 체험 계정 (커밋하지 않음)
-npm run dev                  # 개발 서버. /api는 http://localhost:8000으로 넘김
+npm run dev                  # 개발 서버 (서버 모드). /api는 http://localhost:8000으로 넘김
+VITE_STORE=local npm run dev # 오프라인 시연 모드. .env.local의 VITE_TRIAL_ACCOUNTS (cp .env.example .env.local, 커밋하지 않음)
+npm run api:types            # docs/api/openapi.json이 바뀌면 src/api/schema.d.ts를 다시 만든다
 npm test                     # 로직 테스트
 npm run build                # 타입 검사 + 배포용 빌드 (dist/)
 ```
@@ -52,7 +53,8 @@ npm run qr -- --base-url <url> --accounts-file <path>   # 같은 형식(id:passw
 
 ## 구조
 
-- `src/core/`: 로직 (저장 연결 `store.ts`, 로그인 흐름 `session.ts`, 이름 후보 `names.ts`, 도장첩 `stamps.ts`, 듣기 `speak.ts`). 화면 코드 없음
-- `src/ui/`: 화면. 화면 상태는 `flow.ts`의 리듀서 하나로 관리. 저장소에 직접 닿지 않고 `Store`로만 저장한다
-- `src/data/`: 한마디(`content/phrases.json`을 읽음), 체험 계정(`.env.local`), 한자 한국음 표
-- 지금 `Store`는 기기 저장(localStorage) 구현이다. 백엔드 API가 정해지면 `src/api/`에 같은 모양의 구현을 만들어 `main.tsx`에서 바꿔 끼운다
+- `src/api/`: 서버 연결. `client.ts`(fetch 감싸개: `/api`, Bearer 토큰, 시간 제한, `ApiError`), `store.ts`(`Store` 구현), `names.ts`(이름 후보, 안 되면 임시 규칙), `phrases.ts`(한마디 받기·캐시), `schema.d.ts`(생성된 타입)
+- `src/core/`: 로직 (기기 저장 `store.ts`, 처음 화면 `session.ts`, 이름 후보 임시 규칙 `names.ts`, 도장첩 `stamps.ts`, 듣기 `speak.ts`). 화면 코드 없음
+- `src/ui/`: 화면. 화면 상태는 `flow.ts`의 리듀서 하나로 관리. 저장소에 직접 닿지 않고 `Store`로만 저장한다. 한마디는 로그인 때 받은 목록을 props로 받는다
+- `src/data/`: 지도 자리(`boardMap.ts`), 오프라인 시연용 한마디(`content/phrases.json`)와 체험 계정(`.env.local`), 한자 한국음 표
+- `main.tsx`가 모드를 고른다. 기본은 서버 모드(`src/api/`), `VITE_STORE=local`이면 `localMode.ts`(기기 저장 + 체험 계정 + 번들 한마디)를 따로 불러온다. 서버 모드 빌드에는 체험 계정과 한마디가 들어가지 않는다

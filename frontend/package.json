@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "node --test tests/",
-    "qr": "node scripts/make-qr-cards.mjs"
+    "test": "node --test \"tests/**/*.test.ts\"",
+    "qr": "node scripts/make-qr-cards.mjs",
+    "api:types": "openapi-typescript ../docs/api/openapi.json -o src/api/schema.d.ts"
   },
   "dependencies": {
     "react": "^19.1.0",
@@ -18,6 +19,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
+    "openapi-typescript": "7.13.0",
     "qrcode": "1.5.4",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"

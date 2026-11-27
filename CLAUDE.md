@@ -13,7 +13,7 @@ KOREC 해커톤 출품작. **코드 프리즈: 2026-11-29(일) 17:00.** 그 뒤�
 ├─ Caddyfile            ← HTTPS, /api/* → api:8000
 ├─ deploy/              ← 배포 스크립트, web 이미지 Dockerfile, 서버 .env 예시 (현우 담당)
 ├─ .github/workflows/   ← CI(ci.yml), CD(cd.yml) (현우 담당)
-├─ content/phrases.json ← 한마디 콘텐츠의 유일한 원본 (FE 번들과 DB 시드가 같이 씀)
+├─ content/phrases.json ← 한마디 콘텐츠의 유일한 원본 (DB 시드. FE는 GET /api/phrases로 받음)
 ├─ docs/
 │  ├─ api/openapi.json  ← API 계약. BE가 생성하고 커밋, FE가 타입을 생성
 │  ├─ adr/              ← 설계 결정 기록 (ADR-001 …)
