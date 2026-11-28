@@ -5,9 +5,8 @@ import { chosenName, hangulName } from '../core/names.ts'
 import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
-import { placePins, stampOffset } from '../data/boardMap.ts'
 import { JA, PARTNER } from '../i18n.ts'
-import { MapArt } from './map.tsx'
+import { Lantern, Roof } from './hanok.tsx'
 import { Pouch } from './parts.tsx'
 import { ANIMALS, Seal } from './stamps.tsx'
 
@@ -35,6 +34,7 @@ export function Login({ onSubmit, notice = null }: { onSubmit: (id: string, pass
 
   return (
     <main className="page">
+      <Roof />
       <header className="hero">
         <h1 className="brand">{JA.appName}</h1>
         <p className="tagline">{JA.tagline}</p>
@@ -227,7 +227,7 @@ export function Setup({
       {animal && (
         <div className="preview">
           <p className="label">{JA.setup.preview}</p>
-          <Seal animal={animal} name={koreanName} size="big" />
+          <Seal animal={animal} name={koreanName} size="big" framed />
         </div>
       )}
       {failed && (
@@ -260,11 +260,11 @@ function Progress({ stamps, phrases }: { stamps: Stamp[]; phrases: Phrase[] }) {
   )
 }
 
-function stampStyle(phraseId: string) {
-  const { dx, dy, rotate } = stampOffset(phraseId)
-  return { transform: `translate(${dx}px, ${dy}px) rotate(${rotate}deg)` }
-}
+/** 창 칸 번호: 一 二 三 … (10개 넘으면 숫자) */
+const KANJI = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
+const windowNo = (i: number) => KANJI[i] ?? String(i + 1)
 
+/** 한마디판: 한옥 지붕 아래 창 칸. 통한 한마디의 창에 불이 켜진다 (DESIGN.md §6) */
 export function Board({
   profile,
   stamps,
@@ -284,13 +284,13 @@ export function Board({
   onOpen: (p: Phrase) => void
   onBook: () => void
 }) {
-  const pins = placePins(phrases)
+  const p = bookProgress(stamps, phrases)
   return (
-    <main className="page stack">
-      <header className="bar">
-        <strong className="brand-sm">{JA.appName}</strong>
-        <Progress stamps={stamps} phrases={phrases} />
-      </header>
+    <main className="page board">
+      <Roof />
+      <h1 className="brand">{JA.appName}</h1>
+      <p className="lit-count">{JA.board.lit(p.count, p.total)}</p>
+      {p.count === 0 && <p className="muted hint">{JA.board.hint}</p>}
       {pending > 0 && (
         <p className="pending" role="status">
           {JA.board.pending(pending)}
@@ -301,38 +301,35 @@ export function Board({
           {notice}
         </p>
       )}
-      <div className="me">
-        <Seal animal={profile.animal} name={profile.koreanName} />
-        <div className="me-links">
-          <button className="link" type="button" onClick={onBook}>
-            {JA.board.book}
-          </button>
-        </div>
-      </div>
-      <p className="hint">{JA.board.hint}</p>
-      <div className="map">
-        <MapArt pins={pins} />
-        <ol className="map-pins">
-          {pins.map(({ phrase: p, spot, n }) => {
-            const got = !!stampOf(stamps, p.id)
-            return (
-              <li key={p.id} className="pin" style={{ left: `${spot.x}%`, top: `${spot.y}%` }}>
-                <button className={`pin-btn${got ? ' got' : ''}`} type="button" onClick={() => onOpen(p)}>
-                  <Pouch />
-                  {got && (
-                    <span className="pin-mark" role="img" aria-label={JA.board.done} style={stampStyle(p.id)}>
-                      <Seal animal={profile.animal} name={profile.koreanName} decorative />
-                    </span>
-                  )}
-                  <span className="pin-label">
-                    <b>{n}</b> {p.label}
+      <ol className="wall">
+        {phrases.map((ph, i) => {
+          const got = !!stampOf(stamps, ph.id)
+          return (
+            <li key={ph.id}>
+              <button className={`win${got ? ' lit' : ''}`} type="button" onClick={() => onOpen(ph)}>
+                {got ? (
+                  <span role="img" aria-label={JA.board.done}>
+                    <Seal animal={profile.animal} name={profile.koreanName} framed decorative />
                   </span>
-                </button>
-              </li>
-            )
-          })}
-        </ol>
-      </div>
+                ) : (
+                  <Pouch />
+                )}
+                <span className="win-label">
+                  {windowNo(i)}　{ph.label}
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+      <nav className="tabs">
+        <span className="tab is-on" aria-current="page">
+          {JA.board.tab}
+        </span>
+        <button className="tab" type="button" onClick={onBook}>
+          {JA.board.book}
+        </button>
+      </nav>
     </main>
   )
 }
@@ -488,24 +485,32 @@ export function Stamped({
   onBoard: () => void
 }) {
   const stamp = stampOf(stamps, phrase.id)
+  const p = bookProgress(stamps, phrases)
   return (
-    <main className="page center stack">
-      <Seal
-        animal={profile.animal}
-        name={profile.koreanName}
-        time={stamp && formatStampTime(stamp.at)}
-        size="big"
-        stampIn
-      />
+    <main className="page center stack stamped">
+      <div className="lanterns" aria-hidden="true">
+        <Lantern />
+        <Lantern />
+      </div>
+      <div className="stamped-glow" aria-hidden="true" />
+      <Seal animal={profile.animal} name={profile.koreanName} size="big" framed stampIn />
       <h2 className="done-title">{JA.stamped.title}</h2>
-      <p className="ja">{phrase.ja}</p>
-      <Progress stamps={stamps} phrases={phrases} />
+      <p className="stamped-phrase">
+        <span className="stamped-ko" lang="ko">
+          {phrase.ko}
+        </span>
+        <span>
+          {phrase.ja}
+          {stamp && ` ・ ${formatStampTime(stamp.at)}`}
+        </span>
+      </p>
+      <p className="lit-note">{JA.stamped.lit(p.count)}</p>
       <div className="stamped-actions">
-        <button className="btn" type="button" onClick={onBoard}>
-          {JA.stamped.toBoard}
-        </button>
-        <button className="btn btn-outline" type="button" onClick={onBook}>
+        <button className="btn" type="button" onClick={onBook}>
           {JA.stamped.toBook}
+        </button>
+        <button className="btn btn-outline" type="button" onClick={onBoard}>
+          {JA.stamped.toBoard}
         </button>
       </div>
     </main>
@@ -544,7 +549,7 @@ export function Book({
       <main className="page center stack">
         <div className="book-cover" role="img" aria-label={`${JA.book.title} ${JA.book.closed}`}>
           <span className="book-cover-title">{JA.book.title}</span>
-          <Seal animal={profile.animal} name={profile.koreanName} size="big" />
+          <Seal animal={profile.animal} name={profile.koreanName} size="big" framed />
           <span className="book-cover-done">
             {JA.book.closed} {p.count}/{p.total}
           </span>
@@ -582,7 +587,7 @@ export function Book({
           return (
             <li key={ph.id} className={`slot${s ? ' got' : ''}`}>
               {s ? (
-                <Seal animal={profile.animal} name={profile.koreanName} />
+                <Seal animal={profile.animal} name={profile.koreanName} framed />
               ) : (
                 <span className="slot-empty">{JA.book.empty}</span>
               )}

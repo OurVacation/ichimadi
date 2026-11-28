@@ -56,8 +56,16 @@ export const JA = {
     magpie: 'カササギ',
     bear: 'クマ',
   },
+  theme: {
+    night: '夜',
+    day: '昼',
+    toDay: '昼のデザインにする',
+    toNight: '夜のデザインにする',
+  },
   board: {
     stamps: 'スタンプ',
+    lit: (n: number, total: number) => `灯りがともったのは ${n} / ${total}`,
+    tab: 'ひとこと',
     hint: 'ポクチュモニ（福袋）をタップして、ひとことを開けよう',
     book: 'スタンプ帳',
     logout: 'ログアウト',
@@ -69,7 +77,7 @@ export const JA = {
     label: '開けています…',
   },
   card: {
-    back: '← マップへ',
+    back: '← ひとことへ',
     done: (time: string) => `✓ 通じた ${time}`,
     meaning: '意味',
     when: '使うとき',
@@ -83,12 +91,13 @@ export const JA = {
   stamped: {
     title: '通じた！',
     toBook: 'スタンプ帳を見る',
-    toBoard: '地図に戻る',
+    toBoard: 'ひとことに戻る',
+    lit: (n: number) => `${n}つ目の灯りがともりました`,
   },
   book: {
     title: 'イチマディ スタンプ帳',
     lead: '通じたひとことにハンコが押されます',
-    back: '← マップへ',
+    back: '← ひとことへ',
     empty: 'まだ',
     complete: 'コンプリート！',
     completeLead: (n: number) => `${n}つのひとことがすべて通じました`,

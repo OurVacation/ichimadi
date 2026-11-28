@@ -1,4 +1,4 @@
-// 도장 = 동물 모양. 동물마다 실루엣 하나와 이름이 들어갈 자리. 모두 viewBox 0 0 100 100
+// 도장 = 동물 모양. framed면 붉은 네모 낙관 틀 안에 넣는다. 동물마다 실루엣 하나와 이름이 들어갈 자리. 모두 viewBox 0 0 100 100
 import type { ReactNode } from 'react'
 import type { Animal } from '../core/types.ts'
 import { JA } from '../i18n.ts'
@@ -94,6 +94,7 @@ export function Seal({
   size = 'small',
   stampIn = false,
   decorative = false,
+  framed = false,
 }: {
   animal: Animal | null
   name: string | null
@@ -102,12 +103,14 @@ export function Seal({
   stampIn?: boolean
   /** 옆에 글자가 따로 있으면 읽어 주지 않는다 */
   decorative?: boolean
+  /** 낙관: 붉은 네모 틀 안에 창호지색 동물 (DESIGN.md §5) */
+  framed?: boolean
 }) {
   if (!animal) return null
   const shape = STAMPS[animal]
   const label = name ? `${JA.animal[animal]} ${name}` : JA.animal[animal]
   return (
-    <span className={`seal seal-${size}${stampIn ? ' stamp-in' : ''}`}>
+    <span className={`seal seal-${size}${framed ? ' seal-framed' : ''}${stampIn ? ' stamp-in' : ''}`}>
       <svg viewBox="0 0 100 100" {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label })}>
         <g className="seal-ink">{shape.ink}</g>
         <g className="seal-paper">{shape.paper}</g>
