@@ -9,7 +9,8 @@ import { firstScreen } from '../core/session.ts'
 import { createEnterGate } from './enterGate.ts'
 import { isDeep, reduce } from './flow.ts'
 import { Eaves, Sky, ThemeToggle } from './hanok.tsx'
-import { Board, Book, Card, LoadFailed, Loading, Login, Opening, Partner, Setup, Stamped } from './screens.tsx'
+import { BOARD_MARKS, CARD_MARKS, Coach } from './coach.tsx'
+import { Board, Book, Card, Landing, LoadFailed, Loading, Login, Opening, Partner, Setup, Stamped } from './screens.tsx'
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
@@ -50,6 +51,10 @@ export function App({
   const [failedLoad, setFailedLoad] = useState<{ accountId: string; message: string } | null>(null)
   /** 저장된 로그인을 되살리거나 QR로 로그인하는 중. 그동안 로그인 폼을 보이지 않는다 (다른 사람이 끼어들지 않게) */
   const [restoring, setRestoring] = useState(() => qrLogin.kind === 'login' || (qrLogin.kind === 'none' && session.load() !== null))
+  /** 첫 화면은 늘 랜딩(「はじめる」). 누르기 전에는 로그인·한마디판을 보이지 않는다 (QR 로그인은 그 뒤에서 이미 진행 중) */
+  const [entered, setEntered] = useState(false)
+  /** 사용법 안내(코치마크). 도장을 처음 정하면 한마디판 → 처음 연 카드 순서로 한 번씩 */
+  const [tour, setTour] = useState<'board' | 'card' | null>(null)
   const gate = useMemo(() => createEnterGate(() => session.load()), [session])
   const handledQr = useRef<LoginHash | null>(null)
   const pouchOpened = useCallback(() => dispatch({ type: 'pouchOpened' }), [])
@@ -185,15 +190,17 @@ export function App({
    * 모든 화면 공통 무대: 뒤에 하늘, 맨 위에 처마, 오른쪽 위에 낮·밤 토글.
    * 달·해(orb)는 한마디판과 로그인에만. 상대방 화면은 상대가 누르는 화면이라 토글을 두지 않는다
    */
-  const scene = (screen: ReactNode, { orb = false, toggle = true } = {}) => (
+  const scene = (screen: ReactNode, { orb = false, toggle = true, coach = null as ReactNode } = {}) => (
     <>
       <Sky orb={orb} />
       <Eaves />
       {toggle && <ThemeToggle theme={theme} />}
       {screen}
+      {coach}
     </>
   )
 
+  if (!entered) return scene(<Landing onStart={() => setEntered(true)} />, { orb: true })
   if (failedLoad) return scene(<LoadFailed message={failedLoad.message} onRetry={() => enter(failedLoad.accountId)} onLogout={signOut} />)
   if (!state) return restoring ? scene(<Loading />) : scene(<Login onSubmit={login} notice={notice} />, { orb: true })
 
@@ -203,6 +210,7 @@ export function App({
     try {
       await store.saveProfile(accountId, next)
       dispatch({ type: 'profileSaved', profile: next })
+      setTour('board')
       return null
     } catch (e) {
       return errorMessage(e)
@@ -223,7 +231,7 @@ export function App({
           onOpen={(phrase) => dispatch({ type: 'openPouch', phrase, instant: reducedMotion() })}
           onBook={() => dispatch({ type: 'toBook' })}
         />,
-        { orb: true },
+        { orb: true, coach: tour === 'board' && <Coach marks={BOARD_MARKS} onClose={() => setTour('card')} /> },
       )
     case 'opening':
       return scene(<Opening onOpened={pouchOpened} />)
@@ -235,6 +243,7 @@ export function App({
           onSaid={() => dispatch({ type: 'said' })}
           onBack={() => dispatch({ type: 'toBoard' })}
         />,
+        { coach: tour === 'card' && <Coach marks={CARD_MARKS} onClose={() => setTour(null)} /> },
       )
     case 'partner':
       return scene(
