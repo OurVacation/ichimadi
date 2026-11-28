@@ -9,6 +9,7 @@ import { createApiStore } from './api/store.ts'
 import { parseLoginHash, type LoginHash } from './core/loginHash.ts'
 import { temporaryNameGenerator } from './core/nameGenerator.ts'
 import { openStorage, type KeyValueStorage } from './core/store.ts'
+import { createTheme } from './core/theme.ts'
 import type { NameGenerator, PhraseSource, Store } from './core/types.ts'
 import { App, type Session } from './ui/App.tsx'
 import './index.css'
@@ -36,6 +37,10 @@ function apiMode(storage: KeyValueStorage): Mode {
 }
 
 const storage = openStorage(() => window.localStorage)
+// 낮(기본)·밤 테마. 그리기 전에 <html data-theme>을 걸어 깜빡이지 않게 한다
+const theme = createTheme(storage, (t) => {
+  document.documentElement.dataset.theme = t
+})
 // 오프라인 시연 모드는 따로 불러온다. 서버 모드 빌드에서는 이 갈래가 통째로 빠진다
 const mode: Promise<Mode> =
   import.meta.env.VITE_STORE === 'local'
@@ -56,7 +61,7 @@ mode.then((m) => {
   const render = (q: LoginHash) =>
     root.render(
       <StrictMode>
-        <App {...m} qrLogin={q} />
+        <App {...m} theme={theme} qrLogin={q} />
       </StrictMode>,
     )
   render(qrLogin)

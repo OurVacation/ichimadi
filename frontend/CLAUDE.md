@@ -11,6 +11,7 @@
 
 ## 반드시 지킬 것
 
+- 화면을 만들거나 고치기 전에 [DESIGN.md](DESIGN.md)를 읽는다. 색은 `index.css`의 토큰만 쓰고, 밤·낮 두 테마에서 모두 확인한다.
 - 화면 문구는 전부 일본어로 쓴다. 한국어는 한마디 카드의 질문과 상대 대답 예시에만 쓴다.
 - 한마디 데이터는 로그인 직후 `GET /api/phrases`로 한 번 받아 기기에 캐시해 둔다(서버에 닿지 못하면, 즉 통신 실패·시간 초과·5xx면 캐시를 쓴다. 서버가 404나 이상한 응답을 주면 캐시를 지운다). 카드는 네트워크를 기다리지 않고 탭 후 1초 안에 보여야 한다.
 - API 호출은 `src/api/` 한 곳에서만 한다. 요청·응답 타입은 생성된 타입만 쓰고 손으로 쓰지 않는다.
@@ -56,5 +57,6 @@ npm run qr -- --base-url <url> --accounts-file <path>   # 같은 형식(id:passw
 - `src/api/`: 서버 연결. `client.ts`(fetch 감싸개: `/api`, Bearer 토큰, 시간 제한, `ApiError`), `store.ts`(`Store` 구현), `names.ts`(이름 후보, 안 되면 임시 규칙), `phrases.ts`(한마디 받기·캐시), `stampOutbox.ts`(도장 보낼 큐), `schema.d.ts`(생성된 타입)
 - `src/core/`: 로직 (기기 저장 `store.ts`, 처음 화면 `session.ts`, 이름 후보 임시 규칙 `names.ts`, 도장첩 `stamps.ts`, 듣기 `speak.ts`). 화면 코드 없음
 - `src/ui/`: 화면. 화면 상태는 `flow.ts`의 리듀서 하나로 관리. 저장소에 직접 닿지 않고 `Store`로만 저장한다. 한마디는 로그인 때 받은 목록을 props로 받는다
-- `src/data/`: 지도 자리(`boardMap.ts`), 오프라인 시연용 한마디(`content/phrases.json`)와 체험 계정(`.env.local`), 한자 한국음 표
+- `src/data/`: 오프라인 시연용 한마디(`content/phrases.json`)와 체험 계정(`.env.local`), 한자 한국음 표
+- 디자인(색·글꼴·한옥 요소·밤/낮 테마)은 **[DESIGN.md](DESIGN.md)**를 따른다. 테마 저장은 `src/core/theme.ts`, 한옥 그림은 `src/ui/hanok.tsx`
 - `main.tsx`가 모드를 고른다. 기본은 서버 모드(`src/api/`), `VITE_STORE=local`이면 `localMode.ts`(기기 저장 + 체험 계정 + 번들 한마디)를 따로 불러온다. 서버 모드 빌드에는 체험 계정과 한마디가 들어가지 않는다
