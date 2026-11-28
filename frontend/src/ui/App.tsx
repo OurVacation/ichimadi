@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
 import type { NameGenerator, PhraseSource, Store } from '../core/types.ts'
 import { errorMessage } from '../api/client.ts'
 import { withPending, type StampOutbox } from '../api/stampOutbox.ts'
 import type { LoginHash } from '../core/loginHash.ts'
+import type { ThemeControl } from '../core/theme.ts'
 import { JA } from '../i18n.ts'
 import { firstScreen } from '../core/session.ts'
 import { createEnterGate } from './enterGate.ts'
 import { isDeep, reduce } from './flow.ts'
+import { Eaves, Sky, ThemeToggle } from './hanok.tsx'
 import { Board, Book, Card, LoadFailed, Loading, Login, Opening, Partner, Setup, Stamped } from './screens.tsx'
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -29,6 +31,7 @@ export function App({
   qrLogin,
   generateNames,
   loadPhrases,
+  theme,
 }: {
   store: Store
   /** 도장 보낼 목록. 화면에 먼저 찍고 저장은 여기서 뒤에 한다 */
@@ -37,6 +40,8 @@ export function App({
   qrLogin: LoginHash
   generateNames: NameGenerator
   loadPhrases: PhraseSource
+  /** 밤·낮 테마. 상대방 화면을 뺀 모든 화면 오른쪽 위에 토글을 둔다 */
+  theme: ThemeControl
 }) {
   const [state, dispatch] = useReducer(reduce, null)
   /** 로그인 화면 아래 알림 */
@@ -176,8 +181,21 @@ export function App({
     }
   }, [session, qrLogin, login, enter, gate, outbox])
 
-  if (failedLoad) return <LoadFailed message={failedLoad.message} onRetry={() => enter(failedLoad.accountId)} onLogout={signOut} />
-  if (!state) return restoring ? <Loading /> : <Login onSubmit={login} notice={notice} />
+  /**
+   * 모든 화면 공통 무대: 뒤에 하늘, 맨 위에 처마, 오른쪽 위에 낮·밤 토글.
+   * 달·해(orb)는 한마디판과 로그인에만. 상대방 화면은 상대가 누르는 화면이라 토글을 두지 않는다
+   */
+  const scene = (screen: ReactNode, { orb = false, toggle = true } = {}) => (
+    <>
+      <Sky orb={orb} />
+      <Eaves />
+      {toggle && <ThemeToggle theme={theme} />}
+      {screen}
+    </>
+  )
+
+  if (failedLoad) return scene(<LoadFailed message={failedLoad.message} onRetry={() => enter(failedLoad.accountId)} onLogout={signOut} />)
+  if (!state) return restoring ? scene(<Loading />) : scene(<Login onSubmit={login} notice={notice} />, { orb: true })
 
   const { accountId, profile, stamps, phrases, screen, stampNotice } = state
 
@@ -193,9 +211,9 @@ export function App({
 
   switch (screen.kind) {
     case 'setup':
-      return <Setup generateNames={generateNames} onConfirm={saveProfile} />
+      return scene(<Setup generateNames={generateNames} onConfirm={saveProfile} />)
     case 'board':
-      return (
+      return scene(
         <Board
           profile={profile}
           stamps={stamps}
@@ -204,21 +222,22 @@ export function App({
           notice={stampNotice}
           onOpen={(phrase) => dispatch({ type: 'openPouch', phrase, instant: reducedMotion() })}
           onBook={() => dispatch({ type: 'toBook' })}
-        />
+        />,
+        { orb: true },
       )
     case 'opening':
-      return <Opening onOpened={pouchOpened} />
+      return scene(<Opening onOpened={pouchOpened} />)
     case 'card':
-      return (
+      return scene(
         <Card
           phrase={screen.phrase}
           stamp={stamps.find((s) => s.phraseId === screen.phrase.id)}
           onSaid={() => dispatch({ type: 'said' })}
           onBack={() => dispatch({ type: 'toBoard' })}
-        />
+        />,
       )
     case 'partner':
-      return (
+      return scene(
         <Partner
           phrase={screen.phrase}
           onAgain={() => dispatch({ type: 'again' })}
@@ -227,10 +246,11 @@ export function App({
             dispatch({ type: 'stamped', at: at.toISOString() })
             outbox.add(accountId, screen.phrase.id, at)
           }}
-        />
+        />,
+        { toggle: false },
       )
     case 'stamped':
-      return (
+      return scene(
         <Stamped
           phrase={screen.phrase}
           profile={profile}
@@ -238,20 +258,17 @@ export function App({
           phrases={phrases}
           onBook={() => dispatch({ type: 'toBook' })}
           onBoard={() => dispatch({ type: 'toBoard' })}
-        />
+        />,
       )
     case 'book':
-      return (
+      return scene(
         <Book
           profile={profile}
           stamps={stamps}
           phrases={phrases}
-          closed={screen.closed}
-          onClose={() => dispatch({ type: 'closeBook' })}
-          onReopen={() => dispatch({ type: 'openBook' })}
           onBack={() => dispatch({ type: 'toBoard' })}
           onLogout={signOut}
-        />
+        />,
       )
   }
 }

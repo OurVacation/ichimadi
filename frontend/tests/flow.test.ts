@@ -2,7 +2,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import type { Phrase, Stamp } from '../src/core/types.ts'
-import { placePins } from '../src/data/boardMap.ts'
 import { isDeep, reduce, type State } from '../src/ui/flow.ts'
 
 const phrase = (id: string): Phrase => ({
@@ -48,29 +47,6 @@ test('도장첩 닫기는 받은 한마디를 다 모았을 때만 된다 (받�
   assert.deepEqual(half?.screen, { kind: 'book', closed: false })
   const full = reduce(reduce(signedIn(phrases, [stamp('q1'), stamp('q7')]), { type: 'toBook' }), { type: 'closeBook' })
   assert.deepEqual(full?.screen, { kind: 'book', closed: true })
-})
-
-test('지도: 한마디 순서대로 자리와 번호를 붙인다', () => {
-  const pins = placePins([phrase('q2'), phrase('q1')])
-  assert.deepEqual(
-    pins.map((p) => [p.phrase.id, p.n, p.spot]),
-    [
-      ['q2', 1, { x: 73, y: 24 }],
-      ['q1', 2, { x: 25, y: 14 }],
-    ],
-  )
-})
-
-test('지도: 자리가 없는 한마디 id는 지도에서 빼고 나머지는 그대로 이어 번호를 붙인다', () => {
-  const pins = placePins([phrase('q1'), phrase('zz-new'), phrase('q3')])
-  assert.deepEqual(
-    pins.map((p) => [p.phrase.id, p.n]),
-    [
-      ['q1', 1],
-      ['q3', 2],
-    ],
-  )
-  assert.deepEqual(placePins([phrase('zz-new')]), [])
 })
 
 test('「알아들었어요」는 서버를 기다리지 않고 바로 찍는다. 이미 받은 한마디는 첫 시각 그대로', () => {
