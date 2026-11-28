@@ -87,6 +87,36 @@
 - `progress`: 활성 카테고리 **전부**, `phrase_sets.sort_order` 순. 도장이 없는 카테고리도 `count: 0`으로 들어간다.
 - 완료(`completed`)는 카테고리별이다. 전체 완료 여부가 필요하면 FE가 `progress.every(p => p.completed)`로 계산한다.
 
+## 4-1. `GET /api/me/summary`: 마이페이지
+
+FE가 마이페이지 한 화면을 이 호출 하나로 그린다. 읽기 전용이다. 도장 모양 수정은 `PUT /api/me/profile`, 로그아웃은 FE가 토큰을 지운다.
+
+응답 200
+```json
+{
+  "account_id": "judge01",
+  "animal": "tiger",
+  "korean_name": "양자",
+  "stamp_count": 1,
+  "phrase_count": 24,
+  "sets": [
+    {
+      "code": "hackathon", "name_ja": "ハッカソン会場", "count": 1, "total": 6, "completed": false,
+      "stamps": [
+        { "phrase_id": "q1", "label": "はじめまして", "ko": "어떤 앱인가요?", "stamped_at": "2026-11-29T05:00:00Z" }
+      ]
+    },
+    { "code": "cafe", "name_ja": "カフェ", "count": 0, "total": 6, "completed": false, "stamps": [] }
+  ]
+}
+```
+
+- `account_id`, `animal`, `korean_name`: `GET /api/me`와 같다.
+- `sets`: 활성 카테고리 **전부**, `sort_order` 순. 도장이 없는 카테고리도 `count: 0`, `stamps: []`로 들어간다. 지금 화면에 쓰지 않는 카테고리(`cafe` 등)를 숨기려면 FE가 `code`로 거른다.
+- `sets[].stamps`: 그 카테고리에서 받은 도장, `stamped_at` 오름차순. 카드 내용 중 마이페이지에 보일 `label`, `ko`만 같이 준다.
+- `stamp_count`, `phrase_count`: `sets`의 `count`, `total` 합. 비활성 한마디·카테고리는 어디에도 세지 않는다.
+- `completed` 규칙은 `GET /api/me/stamps`의 `progress`와 같다.
+
 ## 5. `POST /api/me/stamps`: 도장 받기 (M6 「알아들었어요」, M7)
 
 요청
@@ -208,4 +238,5 @@ FE 설정 화면은 입력이 멈추고 500ms 뒤에 이름 짓기를 부른다(
 | 이름 후보 API 필요 없음 | `POST /api/names/suggest` 추가 (LLM), 응답은 FE `NameCandidate {name, note}` 모양 | ADR-004 |
 | `korean_name` 한글 1~10자 | `""`(이름 패스)도 허용 | FE PR #2 |
 | 한마디 필드 | `label` 포함 | FE PR #2 |
+| 마이페이지 API 없음 | `GET /api/me/summary` 추가 (읽기 전용, 한 번에 한 화면) | 태원 2026-11-28 |
 | `GET /api/stats` (P2) | 이번 범위 밖 | 승환 담당 |

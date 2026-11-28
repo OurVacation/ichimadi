@@ -23,12 +23,16 @@ def snapshot(db):
 
 def test_seed_idempotent(db, tmp_path):
     path = content_at(tmp_path)
-    assert seed(db, path) == (1, 6)
+    assert seed(db, path) == (4, 24)
     first = snapshot(db)
-    assert seed(db, path) == (1, 6)
+    assert seed(db, path) == (4, 24)
     assert snapshot(db) == first
-    assert {p.set_code for p in db.scalars(select(Phrase))} == {"hackathon"}
-    assert db.get(PhraseSet, "hackathon").is_active
+    codes = ["hackathon", "cafe", "convenience", "transit"]
+    for order, code in enumerate(codes):
+        category = db.get(PhraseSet, code)
+        assert category.is_active and category.sort_order == order
+        orders = db.scalars(select(Phrase.sort_order).where(Phrase.set_code == code))
+        assert sorted(orders) == list(range(6))
 
 
 def test_remove_reorder_restore(db, tmp_path):
@@ -53,7 +57,7 @@ def test_remove_reorder_restore(db, tmp_path):
 
 def test_explicit_set(db, tmp_path):
     path = content_at(tmp_path)
-    source = json.loads((path / "phrases.json").read_text())
+    source = [p for p in json.loads((path / "phrases.json").read_text()) if "set" not in p]
     source[0]["set"] = "other"
     (path / "phrases.json").write_text(json.dumps(source))
     (path / "phrase_sets.json").write_text(

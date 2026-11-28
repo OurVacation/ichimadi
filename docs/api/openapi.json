@@ -189,6 +189,52 @@
         ]
       }
     },
+    "/api/me/summary": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "마이페이지 (도장 모양, 카테고리별 진행도와 받은 도장)",
+        "operationId": "get_summary_api_me_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/me/stamps": {
       "get": {
         "tags": [
@@ -1016,6 +1062,189 @@
               }
             ],
             "stamps": []
+          }
+        ]
+      },
+      "SummaryResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "animal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Animal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "korean_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Korean Name"
+          },
+          "stamp_count": {
+            "type": "integer",
+            "title": "Stamp Count"
+          },
+          "phrase_count": {
+            "type": "integer",
+            "title": "Phrase Count"
+          },
+          "sets": {
+            "items": {
+              "$ref": "#/components/schemas/SummarySet"
+            },
+            "type": "array",
+            "title": "Sets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "animal",
+          "korean_name",
+          "stamp_count",
+          "phrase_count",
+          "sets"
+        ],
+        "title": "SummaryResponse",
+        "examples": [
+          {
+            "account_id": "judge01",
+            "animal": "tiger",
+            "korean_name": "양자",
+            "phrase_count": 24,
+            "sets": [
+              {
+                "code": "hackathon",
+                "completed": false,
+                "count": 1,
+                "name_ja": "ハッカソン会場",
+                "stamps": [
+                  {
+                    "ko": "어떤 앱인가요?",
+                    "label": "はじめまして",
+                    "phrase_id": "q1",
+                    "stamped_at": "2026-11-29T05:00:00Z"
+                  }
+                ],
+                "total": 6
+              },
+              {
+                "code": "cafe",
+                "completed": false,
+                "count": 0,
+                "name_ja": "カフェ",
+                "stamps": [],
+                "total": 6
+              }
+            ],
+            "stamp_count": 1
+          }
+        ]
+      },
+      "SummarySet": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name_ja": {
+            "type": "string",
+            "title": "Name Ja"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed"
+          },
+          "stamps": {
+            "items": {
+              "$ref": "#/components/schemas/SummaryStamp"
+            },
+            "type": "array",
+            "title": "Stamps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name_ja",
+          "count",
+          "total",
+          "completed",
+          "stamps"
+        ],
+        "title": "SummarySet",
+        "examples": [
+          {
+            "code": "hackathon",
+            "completed": false,
+            "count": 1,
+            "name_ja": "ハッカソン会場",
+            "stamps": [
+              {
+                "ko": "어떤 앱인가요?",
+                "label": "はじめまして",
+                "phrase_id": "q1",
+                "stamped_at": "2026-11-29T05:00:00Z"
+              }
+            ],
+            "total": 6
+          }
+        ]
+      },
+      "SummaryStamp": {
+        "properties": {
+          "phrase_id": {
+            "type": "string",
+            "title": "Phrase Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "ko": {
+            "type": "string",
+            "title": "Ko"
+          },
+          "stamped_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Stamped At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phrase_id",
+          "label",
+          "ko",
+          "stamped_at"
+        ],
+        "title": "SummaryStamp",
+        "examples": [
+          {
+            "ko": "어떤 앱인가요?",
+            "label": "はじめまして",
+            "phrase_id": "q1",
+            "stamped_at": "2026-11-29T05:00:00Z"
           }
         ]
       }

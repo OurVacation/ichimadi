@@ -17,3 +17,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {"animal": "tiger", "korean_name": ""}
+
+### My page (profile + progress and stamps per category)
+GET {{baseUrl}}/api/me/summary
+Authorization: Bearer {{token}}

@@ -1,9 +1,7 @@
-import json
-
 import pytest
 
 from app.models import Phrase, PhraseSet
-from tests.conftest import CONTENT
+from tests.conftest import hackathon_phrases
 
 
 def test_public_content(client, seeded):
@@ -14,7 +12,7 @@ def test_public_content(client, seeded):
         "phrase_sets": [{"code": "hackathon", "name_ja": "ハッカソン会場", "phrase_count": 6}]
     }
     expected = []
-    for item in json.loads((CONTENT / "phrases.json").read_text()):
+    for item in hackathon_phrases():
         expected.append(
             {
                 **{key: item[key] for key in ("id", "label", "ko", "kana", "ja", "when", "reply")},

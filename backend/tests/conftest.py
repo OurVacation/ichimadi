@@ -66,11 +66,16 @@ def client(db):
         app.dependency_overrides.clear()
 
 
+def hackathon_phrases():
+    items = json.loads((CONTENT / "phrases.json").read_text())
+    return [item for item in items if item.get("set", "hackathon") == "hackathon"]
+
+
 @pytest.fixture
 def seeded(db):
     db.add(PhraseSet(code="hackathon", name_ja="ハッカソン会場", sort_order=0))
     db.flush()
-    for order, item in enumerate(json.loads((CONTENT / "phrases.json").read_text())):
+    for order, item in enumerate(hackathon_phrases()):
         db.add(
             Phrase(
                 id=item["id"],

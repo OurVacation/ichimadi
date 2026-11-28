@@ -1,3 +1,6 @@
 [
-  {"code": "hackathon", "name_ja": "ハッカソン会場"}
+  {"code": "hackathon", "name_ja": "ハッカソン会場"},
+  {"code": "cafe", "name_ja": "カフェ"},
+  {"code": "convenience", "name_ja": "コンビニ"},
+  {"code": "transit", "name_ja": "電車・バス・タクシー"}
 ]
