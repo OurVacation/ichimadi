@@ -15,6 +15,22 @@ type Result = Promise<string | null>
 
 const stampOf = (stamps: Stamp[], phraseId: string) => stamps.find((s) => s.phraseId === phraseId)
 
+/** 첫 화면. 브랜드와 큰 낙관 하나, 「はじめる」만 (QR 로그인은 뒤에서 이미 진행 중) */
+export function Landing({ onStart }: { onStart: () => void }) {
+  return (
+    <main className="page landing">
+      <h1 className="brand">{JA.appName}</h1>
+      <div className="landing-seal" aria-hidden="true">
+        <span className="stamped-glow" />
+        <Seal animal="tiger" name={null} size="big" framed decorative />
+      </div>
+      <button className="btn btn-bottom" type="button" onClick={onStart}>
+        {JA.landing.start}
+      </button>
+    </main>
+  )
+}
+
 /** notice: 로그인 화면 아래 알림 (QR 실패, 로그인 끊김). 직접 로그인하면 그 결과로 바뀐다 */
 export function Login({ onSubmit, notice = null }: { onSubmit: (id: string, password: string) => Result; notice?: string | null }) {
   const [id, setId] = useState('')
