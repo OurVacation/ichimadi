@@ -37,7 +37,7 @@ function apiMode(storage: KeyValueStorage): Mode {
 }
 
 const storage = openStorage(() => window.localStorage)
-// 밤(기본)·낮 테마. 그리기 전에 <html data-theme>을 걸어 깜빡이지 않게 한다
+// 낮(기본)·밤 테마. 그리기 전에 <html data-theme>을 걸어 깜빡이지 않게 한다
 const theme = createTheme(storage, (t) => {
   document.documentElement.dataset.theme = t
 })

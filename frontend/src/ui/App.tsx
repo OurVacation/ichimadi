@@ -8,7 +8,7 @@ import { JA } from '../i18n.ts'
 import { firstScreen } from '../core/session.ts'
 import { createEnterGate } from './enterGate.ts'
 import { isDeep, reduce } from './flow.ts'
-import { Sky, ThemeToggle } from './hanok.tsx'
+import { Eaves, Sky, ThemeToggle } from './hanok.tsx'
 import { Board, Book, Card, LoadFailed, Loading, Login, Opening, Partner, Setup, Stamped } from './screens.tsx'
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -181,17 +181,21 @@ export function App({
     }
   }, [session, qrLogin, login, enter, gate, outbox])
 
-  /** 하늘(별·달/해)과 테마 토글을 화면 뒤·위에 깐다. 달·해(orb)는 한마디판과 로그인에만 */
-  const scene = (screen: ReactNode, orb = false) => (
+  /**
+   * 모든 화면 공통 무대: 뒤에 하늘, 맨 위에 처마, 오른쪽 위에 낮·밤 토글.
+   * 달·해(orb)는 한마디판과 로그인에만. 상대방 화면은 상대가 누르는 화면이라 토글을 두지 않는다
+   */
+  const scene = (screen: ReactNode, { orb = false, toggle = true } = {}) => (
     <>
       <Sky orb={orb} />
-      <ThemeToggle theme={theme} />
+      <Eaves />
+      {toggle && <ThemeToggle theme={theme} />}
       {screen}
     </>
   )
 
   if (failedLoad) return scene(<LoadFailed message={failedLoad.message} onRetry={() => enter(failedLoad.accountId)} onLogout={signOut} />)
-  if (!state) return restoring ? scene(<Loading />) : scene(<Login onSubmit={login} notice={notice} />, true)
+  if (!state) return restoring ? scene(<Loading />) : scene(<Login onSubmit={login} notice={notice} />, { orb: true })
 
   const { accountId, profile, stamps, phrases, screen, stampNotice } = state
 
@@ -219,7 +223,7 @@ export function App({
           onOpen={(phrase) => dispatch({ type: 'openPouch', phrase, instant: reducedMotion() })}
           onBook={() => dispatch({ type: 'toBook' })}
         />,
-        true,
+        { orb: true },
       )
     case 'opening':
       return scene(<Opening onOpened={pouchOpened} />)
@@ -233,7 +237,7 @@ export function App({
         />,
       )
     case 'partner':
-      return (
+      return scene(
         <Partner
           phrase={screen.phrase}
           onAgain={() => dispatch({ type: 'again' })}
@@ -242,7 +246,8 @@ export function App({
             dispatch({ type: 'stamped', at: at.toISOString() })
             outbox.add(accountId, screen.phrase.id, at)
           }}
-        />
+        />,
+        { toggle: false },
       )
     case 'stamped':
       return scene(
@@ -261,9 +266,6 @@ export function App({
           profile={profile}
           stamps={stamps}
           phrases={phrases}
-          closed={screen.closed}
-          onClose={() => dispatch({ type: 'closeBook' })}
-          onReopen={() => dispatch({ type: 'openBook' })}
           onBack={() => dispatch({ type: 'toBoard' })}
           onLogout={signOut}
         />,

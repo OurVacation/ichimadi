@@ -6,7 +6,6 @@ import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
 import { bookProgress, formatStampTime } from '../core/stamps.ts'
 import { JA, PARTNER } from '../i18n.ts'
-import { Lantern, Roof } from './hanok.tsx'
 import { Pouch } from './parts.tsx'
 import { ANIMALS, Seal } from './stamps.tsx'
 
@@ -34,7 +33,6 @@ export function Login({ onSubmit, notice = null }: { onSubmit: (id: string, pass
 
   return (
     <main className="page">
-      <Roof />
       <header className="hero">
         <h1 className="brand">{JA.appName}</h1>
         <p className="tagline">{JA.tagline}</p>
@@ -251,15 +249,6 @@ export function Setup({
   )
 }
 
-function Progress({ stamps, phrases }: { stamps: Stamp[]; phrases: Phrase[] }) {
-  const p = bookProgress(stamps, phrases)
-  return (
-    <span className="count">
-      {JA.board.stamps} {p.count}/{p.total}
-    </span>
-  )
-}
-
 /** 창 칸 번호: 一 二 三 … (10개 넘으면 숫자) */
 const KANJI = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
 const windowNo = (i: number) => KANJI[i] ?? String(i + 1)
@@ -287,7 +276,6 @@ export function Board({
   const p = bookProgress(stamps, phrases)
   return (
     <main className="page board">
-      <Roof />
       <h1 className="brand">{JA.appName}</h1>
       <p className="lit-count">{JA.board.lit(p.count, p.total)}</p>
       {p.count === 0 && <p className="muted hint">{JA.board.hint}</p>}
@@ -488,10 +476,6 @@ export function Stamped({
   const p = bookProgress(stamps, phrases)
   return (
     <main className="page center stack stamped">
-      <div className="lanterns" aria-hidden="true">
-        <Lantern />
-        <Lantern />
-      </div>
       <div className="stamped-glow" aria-hidden="true" />
       <Seal animal={profile.animal} name={profile.koreanName} size="big" framed stampIn />
       <h2 className="done-title">{JA.stamped.title}</h2>
@@ -517,92 +501,142 @@ export function Stamped({
   )
 }
 
+/** 표지를 누르면 책이 열리는 시간. 모션 줄이기면 바로 연다 */
+const BOOK_OPEN_MS = 450
+/** 손가락으로 이만큼 넘기면 다음·이전 장 */
+const SWIPE_PX = 50
+
+/**
+ * 도장첩: 처음엔 덮인 옛 책(표지). 누르면 열리고 한 장에 한마디(도장) 하나씩 넘겨 본다 (DESIGN.md §6)
+ * 받지 않은 한마디도 장은 있고 「まだ」로 비워 둔다. 마지막 장 뒤에는 표지로 돌아간다
+ */
 export function Book({
   profile,
   stamps,
   phrases,
-  closed,
-  onClose,
-  onReopen,
   onBack,
   onLogout,
 }: {
   profile: Profile
   stamps: Stamp[]
   phrases: Phrase[]
-  closed: boolean
-  onClose: () => void
-  onReopen: () => void
   onBack: () => void
   onLogout: () => void
 }) {
   const p = bookProgress(stamps, phrases)
-  // 한마디판의 도장첩 링크 옆에 있으면 잘못 누르기 쉬워서 도장첩 맨 아래에 둔다 (폰을 다음 사람에게 넘길 때)
+  /** null = 표지 */
+  const [page, setPage] = useState<number | null>(null)
+  const [opening, setOpening] = useState(false)
+  const [dir, setDir] = useState<'next' | 'prev'>('next')
+  const [touchX, setTouchX] = useState<number | null>(null)
+
+  function open() {
+    if (opening) return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+    if (reduce) return setPage(0)
+    setOpening(true)
+    setTimeout(() => {
+      setOpening(false)
+      setDir('next')
+      setPage(0)
+    }, BOOK_OPEN_MS)
+  }
+
+  function turn(step: 1 | -1) {
+    if (page === null) return
+    const next = page + step
+    if (next < 0 || next >= phrases.length) return
+    setDir(step > 0 ? 'next' : 'prev')
+    setPage(next)
+  }
+
+  // 한마디판의 도장첩 링크 옆에 있으면 잘못 누르기 쉬워서 표지 맨 아래에 둔다 (폰을 다음 사람에게 넘길 때)
   const logout = (
     <button className="link logout" type="button" onClick={() => window.confirm(JA.board.logoutConfirm) && onLogout()}>
       {JA.board.logout}
     </button>
   )
 
-  if (closed) {
+  if (page === null) {
     return (
-      <main className="page center stack">
-        <div className="book-cover" role="img" aria-label={`${JA.book.title} ${JA.book.closed}`}>
-          <span className="book-cover-title">{JA.book.title}</span>
-          <Seal animal={profile.animal} name={profile.koreanName} size="big" framed />
-          <span className="book-cover-done">
-            {JA.book.closed} {p.count}/{p.total}
-          </span>
-        </div>
-        <button className="btn wide" type="button" onClick={onReopen}>
-          {JA.book.reopen}
-        </button>
-        <button className="link" type="button" onClick={onBack}>
+      <main className="page stack book">
+        <button className="link back" type="button" onClick={onBack}>
           {JA.book.back}
         </button>
+        <div className="book-stage">
+          <button className={`tome${opening ? ' is-opening' : ''}`} type="button" onClick={open} aria-label={JA.book.openLabel}>
+            <span className="tome-binding" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="tome-label">
+              <span className="tome-title">{JA.book.cover}</span>
+              <Seal animal={profile.animal} name={profile.koreanName} framed decorative />
+            </span>
+            {p.complete && <span className="tome-done">{JA.book.closed}</span>}
+          </button>
+        </div>
+        <p className="lit-count">{JA.board.lit(p.count, p.total)}</p>
+        <p className="muted book-hint">{JA.book.open}</p>
         {logout}
       </main>
     )
   }
 
+  const ph = phrases[page]
+  const s = stampOf(stamps, ph.id)
+  const last = page === phrases.length - 1
   return (
-    <main className="page stack">
-      <button className="link back" type="button" onClick={onBack}>
-        {JA.book.back}
+    <main
+      className="page stack book"
+      onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
+      onTouchEnd={(e) => {
+        if (touchX === null) return
+        const dx = e.changedTouches[0].clientX - touchX
+        setTouchX(null)
+        if (Math.abs(dx) > SWIPE_PX) turn(dx < 0 ? 1 : -1)
+      }}
+    >
+      <button className="link back" type="button" onClick={() => setPage(null)}>
+        {JA.book.toCover}
       </button>
-      <header className="bar">
-        <h2>{JA.book.title}</h2>
-        <Progress stamps={stamps} phrases={phrases} />
-      </header>
-      <p className="muted">{JA.book.lead}</p>
-      {p.complete && (
+      <article className={`leaf leaf-${dir}`} key={ph.id}>
+        <p className="leaf-no">{windowNo(page)}</p>
+        {s ? (
+          <Seal animal={profile.animal} name={profile.koreanName} size="big" framed />
+        ) : (
+          <span className="leaf-empty">{JA.book.empty}</span>
+        )}
+        <p className="leaf-ko" lang="ko">
+          {ph.ko}
+        </p>
+        <p className="leaf-ja">{ph.ja}</p>
+        {s && <p className="leaf-time">{formatStampTime(s.at)}</p>}
+      </article>
+      {last && p.complete && (
         <div className="complete">
           {JA.book.complete}
           <small>{JA.book.completeLead(p.total)}</small>
         </div>
       )}
-      <ol className="book-grid">
-        {phrases.map((ph) => {
-          const s = stampOf(stamps, ph.id)
-          return (
-            <li key={ph.id} className={`slot${s ? ' got' : ''}`}>
-              {s ? (
-                <Seal animal={profile.animal} name={profile.koreanName} framed />
-              ) : (
-                <span className="slot-empty">{JA.book.empty}</span>
-              )}
-              <span className="slot-ja">{ph.ja}</span>
-              {s && <span className="slot-time">{formatStampTime(s.at)}</span>}
-            </li>
-          )
-        })}
-      </ol>
-      {p.complete && (
-        <button className="btn" type="button" onClick={onClose}>
-          {JA.book.close}
+      <nav className="leaf-nav">
+        <button className="btn btn-outline" type="button" disabled={page === 0} onClick={() => turn(-1)}>
+          {JA.book.prev}
         </button>
-      )}
-      {logout}
+        <span className="leaf-count">{JA.book.page(page + 1, phrases.length)}</span>
+        {last ? (
+          <button className="btn" type="button" onClick={() => setPage(null)}>
+            {JA.book.backToCover}
+          </button>
+        ) : (
+          <button className="btn" type="button" onClick={() => turn(1)}>
+            {JA.book.next}
+          </button>
+        )}
+      </nav>
     </main>
   )
 }

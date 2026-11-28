@@ -57,10 +57,9 @@ export const JA = {
     bear: 'クマ',
   },
   theme: {
-    night: '夜',
-    day: '昼',
-    toDay: '昼のデザインにする',
-    toNight: '夜のデザインにする',
+    label: '画面の明るさ',
+    day: '昼のデザイン',
+    night: '夜のデザイン',
   },
   board: {
     stamps: 'スタンプ',
@@ -96,14 +95,20 @@ export const JA = {
   },
   book: {
     title: 'イチマディ スタンプ帳',
+    cover: 'イチマディ帖',
     lead: '通じたひとことにハンコが押されます',
+    open: 'タップして開く',
+    openLabel: 'スタンプ帳を開く',
     back: '← ひとことへ',
+    toCover: '← 表紙へ',
+    backToCover: '表紙に戻る',
+    prev: '← 前へ',
+    next: '次へ →',
+    page: (n: number, total: number) => `${n} / ${total}`,
     empty: 'まだ',
     complete: 'コンプリート！',
     completeLead: (n: number) => `${n}つのひとことがすべて通じました`,
-    close: 'スタンプ帳を閉じる',
     closed: '完成',
-    reopen: 'もう一度開く',
   },
 }
 
