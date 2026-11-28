@@ -3,4 +3,6 @@
 import type { Phrase } from '../core/types.ts'
 import data from '../../../content/phrases.json' with { type: 'json' }
 
-export const PHRASES: Phrase[] = data
+// content/phrases.json에는 다른 카테고리(cafe 등)도 들어 있다. 한마디판은 행사장 세트만 쓴다. set이 없으면 hackathon (ADR-003, seed.py와 같은 규칙)
+const rows: Array<Phrase & { set?: string }> = data
+export const PHRASES: Phrase[] = rows.filter((p) => (p.set ?? 'hackathon') === 'hackathon')
