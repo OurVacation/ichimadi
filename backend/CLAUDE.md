@@ -22,7 +22,7 @@ backend/
 │  ├─ deps.py          # get_current_user, get_name_generator
 │  ├─ models/          # user, stamp_profile, phrase_set, phrase, stamp, name_suggestion
 │  ├─ schemas/         # Pydantic 요청·응답 모델 (Swagger 예시 포함)
-│  ├─ routers/         # health, auth, me, stamps, phrases, names
+│  ├─ routers/         # health, auth, me(+summary 마이페이지), stamps, phrases, names
 │  ├─ services/        # 비즈니스 로직 (라우터는 얇게)
 │  └─ llm/             # NameGenerator 인터페이스와 Gemini 구현 (호출만, 검증은 services)
 ├─ alembic/            # 마이그레이션
@@ -36,13 +36,13 @@ backend/
 - 구성 계획: `docs/design/backend-architecture.md` · ERD: `docs/design/erd.md` · API 명세: `docs/design/api.md`
 - 구현 작업 목록(T1~T6, 파일·규칙·테스트·완료 조건): `docs/design/backend-tasks.md`
 - 결정: `docs/adr/ADR-001`(API를 FE `Store`에 맞춤), `ADR-002`(데이터 모델), `ADR-003`(한마디 카테고리·API), `ADR-004`(LLM 이름 추천)
-- 보류: H-1 `stamped_at`을 FE 시각으로 받을지, H-2 retry(attempts) 기록, H-3 `hackathon` 외 카테고리 콘텐츠. 정해지기 전에는 구현하지 않는다
+- 보류: H-1 `stamped_at`을 FE 시각으로 받을지, H-2 retry(attempts) 기록, H-3 `hackathon` 외 카테고리 콘텐츠(초안을 DB에만 넣음, 일본어 검수 대기). 정해지기 전에는 구현하지 않는다
 
 ## 데이터 모델 핵심
 
 - `users`(id, login_id UNIQUE — 정규화된 값, password_hash, role: judge|spare|team|demo, ja_name NULL, created_at)
 - `stamp_profiles`(user_id PK, animal NULL: tiger|rabbit|magpie|bear, korean_name NULL=미정 · ''=이름 패스 · 한글 1~10자, updated_at) — 내 도장 모양
-- `phrase_sets`(code TEXT PK, name_ja, sort_order, is_active) — 한마디 카테고리. `content/phrase_sets.json`에서 시드. 지금은 `hackathon` 하나
+- `phrase_sets`(code TEXT PK, name_ja, sort_order, is_active) — 한마디 카테고리. `content/phrase_sets.json`에서 시드. `hackathon`(FE가 씀), `cafe`·`convenience`·`transit`(DB에만, 검수 대기)
 - `phrases`(id TEXT `q1`…, set_code FK, sort_order, label, ko, kana, ja_meaning, usage_ja, reply_ko, reply_kana, reply_ja, is_active) — `content/phrases.json`에서 시드, 지우지 않고 비활성화
 - `stamps`(user_id, phrase_id, stamped_at) — **PK (user_id, phrase_id)**. 한마디당 도장은 하나. 진행도·완료는 **카테고리별**
 - `name_suggestions`(input_key PK, candidates JSONB, model, created_at) — LLM 이름 후보 캐시
