@@ -1,7 +1,7 @@
 // W-04 (H-03): 한국식 이름 후보 (임시 규칙 A-03)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { hangulName, koreanNameCandidates } from '../src/core/names.ts'
+import { chosenName, hangulName, koreanNameCandidates } from '../src/core/names.ts'
 
 test('한자 이름: 후보 3개, 한국 한자음 읽기가 들어 있다', () => {
   const c = koreanNameCandidates('陽子')
@@ -52,4 +52,13 @@ test('한글 이름은 1~10음절이면 그대로 쓴다 (띄어쓰기는 뺀다
 })
 test('한글이 아니거나 11음절 이상이면 그대로 쓰지 않는다', () => {
   for (const input of ['', 'abc', '123', '陽子', '김abc', '가나다라마바사아자차카']) assert.equal(hangulName(input), null, input)
+})
+
+test('설정: 이름 후보가 오면 첫 번째를 미리 고르고, 사용자가 고른 후보가 있으면 그것을 둔다', () => {
+  const c = [{ name: '전양자' }, { name: '전요코' }]
+  assert.equal(chosenName(c, null), '전양자')
+  assert.equal(chosenName(c, '전요코'), '전요코')
+  // 입력을 바꿔 후보가 새로 오면 앞에서 고른 이름은 없으니 다시 첫 번째
+  assert.equal(chosenName([{ name: '김하나' }], '전요코'), '김하나')
+  assert.equal(chosenName([], '전요코'), null)
 })

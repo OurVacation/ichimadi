@@ -36,7 +36,9 @@ function parseStamps(v: unknown): Stamp[] | null {
 
 export function createApiStore(client: ApiClient): Store {
   return {
+    // 폰 하나를 둘이 쓸 수 있다. 실패해도 이전 사람으로 돌아가지 않게 이전 로그인부터 지운다
     async login(id, password) {
+      client.clearAuth()
       const body: Schemas['LoginRequest'] = { login_id: id, password }
       try {
         const r = await client.request('POST', '/auth/login', { body, parse: parseLogin, auth: false })

@@ -30,6 +30,8 @@ export const JA = {
     lead: '通じたときに押す、あなたのハンコです',
     preview: 'あなたのハンコ',
     confirm: 'このハンコに決める',
+    needName: '名前の候補を選ぶか、「名前をパスする」を押してください',
+    needAnimal: 'ハンコの動物を選んでください',
   },
   name: {
     title: '韓国式の名前',
@@ -61,12 +63,14 @@ export const JA = {
     logout: 'ログアウト',
     logoutConfirm: 'ログアウトしますか？',
     done: '通じた',
+    pending: (n: number) => `保存待ち ${n}件 · 通信が戻ったら自動で保存します`,
   },
   opening: {
     label: '開けています…',
   },
   card: {
-    back: '← 一覧',
+    back: '← マップへ',
+    done: (time: string) => `✓ 通じた ${time}`,
     meaning: '意味',
     when: '使うとき',
     listen: '▶ 音声で聞く',
@@ -79,12 +83,12 @@ export const JA = {
   stamped: {
     title: '通じた！',
     toBook: 'スタンプ帳を見る',
-    toBoard: '次のひとことへ',
+    toBoard: '地図に戻る',
   },
   book: {
     title: 'イチマディ スタンプ帳',
     lead: '通じたひとことにハンコが押されます',
-    back: '← 一覧',
+    back: '← マップへ',
     empty: 'まだ',
     complete: 'コンプリート！',
     completeLead: (n: number) => `${n}つのひとことがすべて通じました`,
@@ -95,9 +99,7 @@ export const JA = {
 }
 
 export const PARTNER = {
-  who: '상대방께',
-  lead: '이분이 한국어로 말했어요. 알아들으셨으면 눌러 주세요',
+  lead: '알아들으셨으면 「알아들었어요」, 잘 안 들렸으면 「다시 한 번」을 눌러 주세요',
   ok: '알아들었어요',
   again: '다시 한 번',
-  saveFailed: '저장하지 못했어요. 한 번 더 눌러 주세요',
 }

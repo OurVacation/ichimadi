@@ -4,21 +4,24 @@ import { createRoot } from 'react-dom/client'
 import { createApiClient } from './api/client.ts'
 import { createApiNameGenerator } from './api/names.ts'
 import { createApiPhraseSource } from './api/phrases.ts'
+import { createStampOutbox, type StampOutbox } from './api/stampOutbox.ts'
 import { createApiStore } from './api/store.ts'
-import { parseLoginHash } from './core/loginHash.ts'
+import { parseLoginHash, type LoginHash } from './core/loginHash.ts'
 import { temporaryNameGenerator } from './core/nameGenerator.ts'
 import { openStorage, type KeyValueStorage } from './core/store.ts'
 import type { NameGenerator, PhraseSource, Store } from './core/types.ts'
 import { App, type Session } from './ui/App.tsx'
 import './index.css'
 
-export type Mode = { store: Store; session: Session; generateNames: NameGenerator; loadPhrases: PhraseSource }
+export type Mode = { store: Store; outbox: StampOutbox; session: Session; generateNames: NameGenerator; loadPhrases: PhraseSource }
 
 /** 기본: 같은 출처의 /api. 로그인 토큰과 받은 한마디는 기기에 남긴다 */
 function apiMode(storage: KeyValueStorage): Mode {
   const client = createApiClient({ fetch: (input, init) => fetch(input, init), storage })
+  const store = createApiStore(client)
   return {
-    store: createApiStore(client),
+    store,
+    outbox: createStampOutbox({ storage, send: store.addStamp, currentAccount: () => client.accountId() }),
     session: {
       load: () => client.accountId(),
       // 로그인할 때 토큰은 store가 저장한다. 여기서는 로그아웃만 한다
@@ -40,13 +43,26 @@ const mode: Promise<Mode> =
     : Promise.resolve(apiMode(storage))
 
 // QR 카드로 열면 주소 끝에 비밀번호가 있다. 읽은 즉시 주소에서 지운다 (성공·실패와 상관없이)
-const qrLogin = parseLoginHash(window.location.hash)
-if (qrLogin.kind !== 'none') history.replaceState(null, '', window.location.pathname + window.location.search)
+function readQrLogin() {
+  const qrLogin = parseLoginHash(window.location.hash)
+  if (qrLogin.kind !== 'none') history.replaceState(history.state, '', window.location.pathname + window.location.search)
+  return qrLogin
+}
 
-mode.then((m) =>
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App {...m} qrLogin={qrLogin} />
-    </StrictMode>,
-  ),
-)
+const qrLogin = readQrLogin()
+
+mode.then((m) => {
+  const root = createRoot(document.getElementById('root')!)
+  const render = (q: LoginHash) =>
+    root.render(
+      <StrictMode>
+        <App {...m} qrLogin={q} />
+      </StrictMode>,
+    )
+  render(qrLogin)
+  // 이미 열린 탭에서 다른 QR 카드를 읽으면 주소의 해시만 바뀐다. 다시 읽어 그 계정으로 로그인한다
+  window.addEventListener('hashchange', () => {
+    const next = readQrLogin()
+    if (next.kind !== 'none') render(next)
+  })
+})

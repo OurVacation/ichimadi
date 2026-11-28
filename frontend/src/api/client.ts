@@ -16,6 +16,14 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * 화면에 보일 문구. 서버 에러는 서버의 message_ja, 통신 실패·시간 초과는 위에서 넣은 일본어 안내,
+ * 그 밖(서버 밖의 실패)은 fallback
+ */
+export function errorMessage(e: unknown, fallback: string = JA.error): string {
+  return e instanceof ApiError ? e.messageJa : fallback
+}
+
 /** 응답 본문을 확인해 쓸 모양으로 바꾼다. 모양이 다르면 null */
 export type Parse<T> = (body: unknown) => T | null
 
@@ -33,7 +41,7 @@ export type ApiClient = {
   accountId(): string | null
   saveAuth(token: string, accountId: string): void
   clearAuth(): void
-  /** 토큰을 보낸 요청이 401이면 토큰을 지운 뒤 부른다. 돌려준 함수로 해제 */
+  /** 지금 토큰을 보낸 요청이 401이면 토큰을 지운 뒤 부른다. 돌려준 함수로 해제 */
   onUnauthorized(listener: () => void): () => void
 }
 
@@ -105,7 +113,8 @@ export function createApiClient({
         body = undefined
       }
       if (!res.ok) {
-        if (status === 401 && token) {
+        // 그 사이에 다른 사람이 로그인했으면 그 사람의 토큰은 그대로 둔다 (늦게 온 지난 요청의 401)
+        if (status === 401 && token && auth?.token === token) {
           clearAuth()
           for (const listener of listeners) listener()
         }

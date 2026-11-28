@@ -133,13 +133,26 @@ ol {
 /* buttons */
 .btn {
   min-height: 52px;
-  border: 0;
+  /* 테두리 있는 버튼(btn-outline)과 높이가 같게 늘 2px 테두리 자리를 둔다 */
+  border: 2px solid transparent;
   border-radius: 14px;
   padding: 12px 18px;
   background: var(--red);
   color: var(--on-accent);
   font-weight: 700;
   font-size: 1.05rem;
+}
+
+.btn:disabled {
+  opacity: 1;
+  background: #d9d4ca;
+  color: var(--ink);
+}
+
+.btn-outline {
+  background: var(--surface);
+  color: var(--red);
+  border: 2px solid var(--red);
 }
 
 .btn.wide {
@@ -150,14 +163,28 @@ ol {
   margin-top: auto;
 }
 
+.setup-missing {
+  display: grid;
+  gap: 2px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--indigo);
+}
+
 .link {
   min-height: 44px;
+  min-width: 44px;
   border: 0;
   background: none;
-  padding: 8px 4px;
+  padding: 10px 8px;
   color: var(--muted);
   text-decoration: underline;
   font-size: 0.95rem;
+}
+
+.link.logout {
+  margin-top: auto;
+  align-self: center;
 }
 
 .link.back {
@@ -356,6 +383,16 @@ ol {
   white-space: nowrap;
 }
 
+.pending {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--indigo);
+  background: var(--indigo-soft);
+  border: 1px dashed var(--indigo);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
 .me {
   display: flex;
   align-items: center;
@@ -487,7 +524,12 @@ ol {
 }
 
 .pin-mark .seal {
-  width: 36px;
+  width: 40px;
+}
+
+/* 도장 받은 복주머니는 흐리게 (도장은 그대로) */
+.pin-btn.got .pouch {
+  opacity: 0.5;
 }
 
 /* pouch svg */
@@ -558,6 +600,17 @@ ol {
 }
 
 /* card */
+.card-done {
+  align-self: flex-start;
+  font-weight: 800;
+  color: var(--red-deep);
+  background: var(--red-soft);
+  border: 1.5px solid var(--red);
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-variant-numeric: tabular-nums;
+}
+
 .say {
   background: var(--red-soft);
   border-radius: 18px;
@@ -574,8 +627,9 @@ ol {
 }
 
 .kana {
-  color: var(--red);
+  color: var(--red-deep);
   font-weight: 700;
+  font-size: 1rem;
 }
 
 .kana-spaced {
@@ -597,7 +651,7 @@ ol {
 }
 
 .pair .kana {
-  font-size: 0.85rem;
+  font-size: 1rem;
   line-height: 1.3;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -652,8 +706,12 @@ ol {
 
 .partner-show {
   font-family: var(--f-ja);
-  font-size: 0.85rem;
-  opacity: 0.7;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 10px 12px;
 }
 
 .partner-body {
@@ -661,12 +719,6 @@ ol {
   display: grid;
   align-content: center;
   gap: 16px;
-}
-
-.partner-who {
-  font-size: 0.95rem;
-  letter-spacing: 0.1em;
-  opacity: 0.75;
 }
 
 .partner-lead {
@@ -680,10 +732,6 @@ ol {
   line-height: 1.3;
 }
 
-.partner-error {
-  color: #ffd2d8;
-  font-weight: 700;
-}
 
 .partner-ok {
   width: 100%;
@@ -791,6 +839,12 @@ ol {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+.stamped-actions {
+  align-self: stretch;
+  display: grid;
+  gap: 12px;
 }
 
 .done-title {

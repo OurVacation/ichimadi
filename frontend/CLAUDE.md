@@ -12,13 +12,13 @@
 ## 반드시 지킬 것
 
 - 화면 문구는 전부 일본어로 쓴다. 한국어는 한마디 카드의 질문과 상대 대답 예시에만 쓴다.
-- 한마디 데이터는 로그인 직후 `GET /api/phrases`로 한 번 받아 기기에 캐시해 둔다(받지 못하면 캐시를 쓴다). 카드는 네트워크를 기다리지 않고 탭 후 1초 안에 보여야 한다.
+- 한마디 데이터는 로그인 직후 `GET /api/phrases`로 한 번 받아 기기에 캐시해 둔다(서버에 닿지 못하면, 즉 통신 실패·시간 초과·5xx면 캐시를 쓴다. 서버가 404나 이상한 응답을 주면 캐시를 지운다). 카드는 네트워크를 기다리지 않고 탭 후 1초 안에 보여야 한다.
 - API 호출은 `src/api/` 한 곳에서만 한다. 요청·응답 타입은 생성된 타입만 쓰고 손으로 쓰지 않는다.
 - 에러 응답은 `{code, message_ja}` 형식이다. `message_ja`를 그대로 보여 준다.
 - 기준 브라우저는 iOS Safari와 Android Chrome이다. 모바일 세로 화면 우선.
 - `prefers-reduced-motion`이면 복주머니·도장 애니메이션을 생략한다.
 - TTS: `speechSynthesis`, `lang='ko-KR'`, `rate=0.7`. 지원하지 않으면 듣기 버튼을 숨긴다. iOS는 사용자 탭 안에서 호출해야 소리가 난다.
-- 도장: "알아들었어요"를 누르면 애니메이션을 먼저 보여 주고(낙관적 UI), 실패한 요청은 localStorage 큐에 넣었다가 온라인이 되면 다시 보낸다.
+- 도장: "알아들었어요"를 누르면 서버를 기다리지 않고 도장 화면으로 간다(낙관적 UI). 저장은 `src/api/stampOutbox.ts`가 뒤에서 한다: 계정별 큐(`ichimadi:<계정>:pendingStamps`)에 넣고 하나씩 보내며, 통신 실패·시간 초과·5xx·401이면 남겨 두었다가 온라인이 될 때, 같은 계정으로 들어올 때, 남은 동안 30초마다 다시 보낸다. 404(없는 한마디)만 버리고 서버 문구를 보인다.
 - QR 자동 로그인: `#login=<id>.<password>` 해시를 읽어 로그인한 뒤 `history.replaceState`로 해시를 지운다.
 - `backend/`의 파일은 수정하지 않는다. API가 더 필요하면 필요한 필드를 정리해서 제안한다.
 
@@ -53,7 +53,7 @@ npm run qr -- --base-url <url> --accounts-file <path>   # 같은 형식(id:passw
 
 ## 구조
 
-- `src/api/`: 서버 연결. `client.ts`(fetch 감싸개: `/api`, Bearer 토큰, 시간 제한, `ApiError`), `store.ts`(`Store` 구현), `names.ts`(이름 후보, 안 되면 임시 규칙), `phrases.ts`(한마디 받기·캐시), `schema.d.ts`(생성된 타입)
+- `src/api/`: 서버 연결. `client.ts`(fetch 감싸개: `/api`, Bearer 토큰, 시간 제한, `ApiError`), `store.ts`(`Store` 구현), `names.ts`(이름 후보, 안 되면 임시 규칙), `phrases.ts`(한마디 받기·캐시), `stampOutbox.ts`(도장 보낼 큐), `schema.d.ts`(생성된 타입)
 - `src/core/`: 로직 (기기 저장 `store.ts`, 처음 화면 `session.ts`, 이름 후보 임시 규칙 `names.ts`, 도장첩 `stamps.ts`, 듣기 `speak.ts`). 화면 코드 없음
 - `src/ui/`: 화면. 화면 상태는 `flow.ts`의 리듀서 하나로 관리. 저장소에 직접 닿지 않고 `Store`로만 저장한다. 한마디는 로그인 때 받은 목록을 props로 받는다
 - `src/data/`: 지도 자리(`boardMap.ts`), 오프라인 시연용 한마디(`content/phrases.json`)와 체험 계정(`.env.local`), 한자 한국음 표

@@ -146,3 +146,12 @@ function transliterate(katakana: string, out: string[]): boolean {
   }
   return true
 }
+
+/**
+ * 설정 화면에서 고른 이름. 사용자가 이 후보 중 하나를 눌렀으면 그것, 아니면 첫 후보를 미리 고른다 (탭 한 번 줄임).
+ * 후보가 없으면 null
+ */
+export function chosenName(candidates: { name: string }[], picked: string | null): string | null {
+  if (picked !== null && candidates.some((c) => c.name === picked)) return picked
+  return candidates[0]?.name ?? null
+}

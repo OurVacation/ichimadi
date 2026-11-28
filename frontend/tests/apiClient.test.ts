@@ -1,7 +1,7 @@
 // 서버 연결: fetch 감싸개(에러 모양, 시간 초과)와 서버 Store(모양 바꾸기, 토큰 유지·401)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { ApiError, createApiClient } from '../src/api/client.ts'
+import { ApiError, createApiClient, errorMessage } from '../src/api/client.ts'
 import { createApiStore } from '../src/api/store.ts'
 import { JA } from '../src/i18n.ts'
 import { fakeFetch, memoryStorage, type Call } from './helpers.ts'
@@ -191,6 +191,18 @@ test('토큰을 보낸 요청이 401이면 토큰을 지우고 알린다. 새로
   assert.equal(createApiClient({ fetch: server().fetch, storage }).accountId(), null)
 })
 
+test('login: 요청 전에 이전 로그인을 지운다. 실패(틀림·통신)해도 이전 계정으로 돌아가지 않는다', async () => {
+  for (const reply of [() => [401, { code: 'invalid_credentials', message_ja: 'IDかパスワードが違います' }], () => 'offline'] as const) {
+    const storage = memoryStorage()
+    storage.setItem('ichimadi:auth', JSON.stringify({ token: 'tok-a', accountId: 'a01' }))
+    const f = fakeFetch(reply as () => [number, unknown] | 'offline')
+    const client = createApiClient({ fetch: f.fetch, storage })
+    await createApiStore(client).login('b01', '1234').catch(() => null)
+    assert.equal(client.accountId(), null)
+    assert.equal(createApiClient({ fetch: f.fetch, storage }).accountId(), null)
+  }
+})
+
 test('로그인 실패(401)는 로그인 끊김 알림을 부르지 않는다', async () => {
   const client = createApiClient({ fetch: server().fetch, storage: memoryStorage() })
   let notified = 0
@@ -205,4 +217,42 @@ test('망가진 저장 토큰은 로그인 안 한 것으로 본다', () => {
     storage.setItem('ichimadi:auth', raw)
     assert.equal(createApiClient({ fetch: server().fetch, storage }).accountId(), null, raw)
   }
+})
+
+test('늦게 온 지난 계정 요청의 401은 그 사이에 로그인한 다른 계정을 로그아웃시키지 않는다', async () => {
+  let release: () => void = () => {}
+  const late = new Promise<void>((r) => (release = r))
+  const fetch = (async (_input: string | URL | Request, init: RequestInit = {}) => {
+    const auth = (init.headers as Record<string, string>).Authorization
+    if (auth === 'Bearer tok-a') {
+      await late
+      return new Response(JSON.stringify({ code: 'unauthorized', message_ja: 'ログインが必要です。' }), { status: 401 })
+    }
+    return new Response(JSON.stringify({ stamps: [], progress: [] }), { status: 200 })
+  }) as typeof globalThis.fetch
+  const client = createApiClient({ fetch, storage: memoryStorage() })
+  let notified = 0
+  client.onUnauthorized(() => notified++)
+  client.saveAuth('tok-a', 'a01')
+  const stale = client.request('GET', '/me/stamps', { parse: anything })
+  client.saveAuth('tok-b', 'b01')
+  release()
+  assert.equal((await rejection(stale)).status, 401)
+  assert.equal(client.accountId(), 'b01')
+  assert.equal(notified, 0)
+})
+
+test('화면 문구: 서버 에러는 message_ja, 통신 실패·시간 초과는 일본어 안내, 그 밖은 일반 문구', async () => {
+  const serverError = await rejection(
+    createApiClient({ fetch: fakeFetch(() => [404, { code: 'unknown_phrase', message_ja: 'この一言は見つかりませんでした' }]).fetch, storage: memoryStorage() }).request('GET', '/x', { parse: anything }),
+  )
+  const offline = await rejection(createApiClient({ fetch: fakeFetch(() => 'offline').fetch, storage: memoryStorage() }).request('GET', '/x', { parse: anything }))
+  const timeout = await rejection(
+    createApiClient({ fetch: fakeFetch(() => 'hang').fetch, storage: memoryStorage(), timeoutMs: 20 }).request('GET', '/x', { parse: anything }),
+  )
+  assert.equal(errorMessage(serverError), 'この一言は見つかりませんでした')
+  assert.equal(errorMessage(offline), JA.network.offline)
+  assert.equal(errorMessage(timeout), JA.network.timeout)
+  assert.equal(errorMessage(new Error('local')), JA.error)
+  assert.equal(errorMessage(new Error('local'), JA.load.lead), JA.load.lead)
 })
