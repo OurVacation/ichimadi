@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Animal, NameCandidate, NameGenerator, Phrase, Profile, Stamp } from '../core/types.ts'
 import { errorMessage } from '../api/client.ts'
+import { hangulToKatakana } from '../core/hangulKana.ts'
 import { chosenName, hangulName } from '../core/names.ts'
 import { pairWords } from '../core/pairs.ts'
 import { canSpeak, speakKorean } from '../core/speak.ts'
@@ -197,6 +198,7 @@ export function Setup({
                     onClick={() => setPicked(c.name)}
                   >
                     <b lang="ko">{c.name}</b>
+                    <span className="candidate-kana">{hangulToKatakana(c.name)}</span>
                     {c.note && <small>{c.note}</small>}
                   </button>
                 ))}

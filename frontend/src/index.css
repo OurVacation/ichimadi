@@ -24,7 +24,8 @@
   --win-lit: radial-gradient(circle, #ffe9b0 0%, #f2b248 75%, #d98d2b 100%);
   --win-lit-glow: 0 0 22px rgba(242, 178, 72, 0.55);
   --lattice: rgba(58, 42, 34, 0.9);
-  --pouch-dim: 0.55;
+  --pouch-dim: 0.9;
+  --seal-glow: 0 0 36px 6px rgba(242, 178, 72, 0.45);
   --glow: rgba(242, 178, 72, 0.5);
   --sky-dots: radial-gradient(1.2px 1.2px at 20px 30px, #fff 60%, transparent), radial-gradient(1px 1px at 120px 80px, #fff 60%, transparent),
     radial-gradient(1.5px 1.5px at 200px 40px, #ffe9b0 60%, transparent), radial-gradient(1px 1px at 260px 120px, #fff 60%, transparent),
@@ -79,6 +80,7 @@
   --win-lit-glow: 0 0 16px rgba(242, 178, 72, 0.45);
   --lattice: #e3d3bb;
   --pouch-dim: 1;
+  --seal-glow: 0 0 0 transparent;
   --glow: rgba(242, 178, 72, 0.35);
   --sky-dots: radial-gradient(rgba(140, 110, 70, 0.07) 1px, transparent 1.4px);
   --sky-size: 8px 8px;
@@ -259,10 +261,10 @@ ol {
   color: var(--toggle-dot-ink);
 }
 
-/* eaves: 화면 맨 위 처마 띠 (지붕 아래쪽 기와 끝만). 모든 화면 공통 */
+/* eaves: 화면 맨 위 처마 띠 (지붕 아래쪽 기와 끝만). 모든 화면 공통, 스크롤해도 같은 높이로 맨 위에 고정 */
 .eaves {
-  position: absolute;
-  z-index: 2;
+  position: fixed;
+  z-index: 15;
   top: 0;
   left: 0;
   right: 0;
@@ -270,7 +272,16 @@ ol {
   pointer-events: none;
 }
 
+/* 스크롤한 글자가 처마 아래로 비치지 않게, 처마 뒤를 하늘색으로 덮고 아래로 갈수록 투명하게 */
+.eaves::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--bg-top) 70%, transparent);
+}
+
 .eaves svg {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;
@@ -579,6 +590,17 @@ ol {
   line-height: 1.2;
 }
 
+.candidate-kana {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--accent);
+}
+
+.candidate.is-picked .candidate-kana {
+  color: #a3521a;
+}
+
 .candidate small {
   font-size: 0.7rem;
   line-height: 1.2;
@@ -597,6 +619,11 @@ ol {
 
 .preview .seal {
   width: 124px;
+}
+
+/* 밤에는 미리보기 낙관 둘레에 은은한 등불 빛 */
+.preview .seal-framed {
+  box-shadow: inset 0 0 0 3px var(--red), inset 0 0 0 5px var(--seal-cream), inset 0 0 0 8px var(--red), 0 4px 14px rgba(0, 0, 0, 0.18), var(--seal-glow);
 }
 
 /* board: 지붕 → 이름 → 불 켜진 수 → 창 칸 → 탭 */
@@ -1199,7 +1226,8 @@ ol {
   background:
     repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 5px),
     linear-gradient(160deg, #26345f 0%, #1c2748 60%, #161f3b 100%);
-  box-shadow: 0 2px 0 #c9b48e, 0 4px 0 #b39c74, 0 16px 30px rgba(0, 0, 0, 0.35);
+  /* 밤에는 책 둘레에 은은한 등불 빛 (--seal-glow) */
+  box-shadow: 0 2px 0 #c9b48e, 0 4px 0 #b39c74, 0 16px 30px rgba(0, 0, 0, 0.35), var(--seal-glow);
   transform-origin: left center;
   transition: transform 0.45s ease;
 }
